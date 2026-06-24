@@ -73,6 +73,18 @@
           "sets": null,
           "reps": null,
           "weight": null
+        },
+        {
+          "name": "Squats",
+          "sets": 3,
+          "reps": 15,
+          "weight": 60
+        },
+        {
+          "name": "Single Leg Glute Bridges",
+          "sets": 3,
+          "reps": 15,
+          "weight": 60
         }
       ]
     }
