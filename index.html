@@ -162,6 +162,23 @@
   .hist-ex{margin-bottom:10px;}
   .hist-ex-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text2);margin-bottom:4px;}
   .hist-set{font-size:14px;color:var(--text);padding:2px 0;}
+
+  /* Exercise picker */
+  .ex-picker-btn{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius);font-size:15px;font-weight:500;cursor:pointer;min-height:48px;text-align:left;}
+  .ex-picker-btn:active{opacity:0.7;}
+  .ex-picker-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);z-index:100;max-height:260px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.12);}
+  .ex-picker-dropdown.hidden{display:none;}
+  .ex-picker-option{padding:13px 16px;font-size:15px;cursor:pointer;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .ex-picker-option:last-child{border-bottom:none;}
+  .ex-picker-option:active{background:var(--surface2);}
+  .ex-picker-option.selected{color:var(--blue-text);background:var(--blue-bg);}
+  .ex-picker-option .ex-opt-count{font-size:12px;color:var(--text3);margin-left:auto;}
+  .ex-picker-option.selected .ex-opt-count{color:var(--blue-text);opacity:0.7;}
+
+  /* Metric toggle buttons */
+  .metric-btn{font-family:inherit;font-size:12px;font-weight:600;line-height:1.3;cursor:pointer;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--surface2);color:var(--text2);padding:9px 4px;min-height:52px;transition:all 0.15s;}
+  .metric-btn:active{opacity:0.7;}
+  .metric-btn.active{background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue);}
 </style>
 </head>
 <body>
@@ -381,18 +398,29 @@
   <!-- Exercise progress -->
   <div class="card">
     <div class="card-title">Exercise progress</div>
-    <div class="form-row" style="margin-bottom:12px">
-      <label>Select exercise</label>
-      <select id="ex-select" onchange="renderExerciseChart()" style="font-size:15px;min-height:44px">
-        <option value="">— choose an exercise —</option>
-      </select>
+
+    <!-- Custom exercise picker -->
+    <div style="position:relative;margin-bottom:14px" id="ex-picker-wrap">
+      <button class="ex-picker-btn" id="ex-picker-btn" onclick="toggleExPicker()">
+        <span id="ex-picker-label" style="flex:1;text-align:left;color:var(--text2)">Choose an exercise</span>
+        <span id="ex-picker-chevron" style="font-size:12px;color:var(--text3);transition:transform 0.2s">▼</span>
+      </button>
+      <div class="ex-picker-dropdown hidden" id="ex-picker-dropdown">
+        <div id="ex-picker-list"></div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px" id="ex-chart-toggles">
-      <button class="btn btn-sm btn-primary" id="toggle-weight" onclick="setExMetric('weight',this)">Max weight</button>
-      <button class="btn btn-sm" id="toggle-volume" onclick="setExMetric('volume',this)">Volume</button>
+
+    <!-- Metric toggles -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
+      <button class="metric-btn active" id="m-weight" onclick="setExMetric('weight')">Max<br>weight</button>
+      <button class="metric-btn" id="m-reps" onclick="setExMetric('reps')">Max<br>reps</button>
+      <button class="metric-btn" id="m-sets" onclick="setExMetric('sets')">Total<br>sets</button>
+      <button class="metric-btn" id="m-volume" onclick="setExMetric('volume')">Volume<br><span style="font-size:10px;opacity:0.7">kg×reps</span></button>
     </div>
+
     <div style="position:relative;height:200px"><canvas id="exercise-chart"></canvas></div>
     <div id="ex-chart-empty" class="empty" style="display:none;padding:20px 0">No data for this exercise yet</div>
+
     <!-- PR badge -->
     <div id="pr-badge" style="display:none;margin-top:12px;padding:12px;background:var(--amber-bg);border-radius:var(--radius);text-align:center">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber-text);margin-bottom:2px">Personal Record</div>
@@ -1055,6 +1083,8 @@ function renderProgress() {
   renderVolumeChart();
   populateExerciseSelect();
   renderExerciseChart();
+  // re-open dropdown list so it's fresh if already open
+  document.getElementById('ex-picker-dropdown').classList.add('hidden');
 }
 
 function renderProgressSummary() {
@@ -1104,25 +1134,59 @@ function renderVolumeChart() {
   });
 }
 
+let selectedEx = '';
+
 function populateExerciseSelect() {
-  const sel = document.getElementById('ex-select');
-  const current = sel.value;
-  const exSet = new Set();
-  workouts.forEach(w => Object.keys(w.sets || {}).forEach(ex => exSet.add(ex)));
-  const exercises = [...exSet].sort();
-  sel.innerHTML = '<option value="">— choose an exercise —</option>' +
-    exercises.map(ex => `<option value="${esc(ex)}"${ex===current?' selected':''}>${esc(ex)}</option>`).join('');
+  const exMap = {};
+  workouts.forEach(w => Object.entries(w.sets || {}).forEach(([ex, sets]) => {
+    exMap[ex] = (exMap[ex] || 0) + sets.length;
+  }));
+  const exercises = Object.keys(exMap).sort();
+  const list = document.getElementById('ex-picker-list');
+  if (!exercises.length) { list.innerHTML = '<div style="padding:14px 16px;font-size:14px;color:var(--text2)">No exercises recorded yet</div>'; return; }
+  list.innerHTML = exercises.map(ex => `
+    <div class="ex-picker-option${ex===selectedEx?' selected':''}" onclick="selectExercise(${esc(JSON.stringify(ex))})">
+      <span style="flex:1">${esc(ex)}</span>
+      <span class="ex-opt-count">${exMap[ex]} sets</span>
+    </div>`).join('');
 }
 
-function setExMetric(metric, btn) {
+function toggleExPicker() {
+  const dd = document.getElementById('ex-picker-dropdown');
+  const ch = document.getElementById('ex-picker-chevron');
+  const open = !dd.classList.contains('hidden');
+  dd.classList.toggle('hidden', open);
+  ch.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function selectExercise(ex) {
+  selectedEx = ex;
+  document.getElementById('ex-picker-label').textContent = ex;
+  document.getElementById('ex-picker-label').style.color = 'var(--text)';
+  document.getElementById('ex-picker-dropdown').classList.add('hidden');
+  document.getElementById('ex-picker-chevron').style.transform = '';
+  populateExerciseSelect();
+  renderExerciseChart();
+}
+
+// Close picker when clicking outside
+document.addEventListener('click', e => {
+  if (!document.getElementById('ex-picker-wrap')?.contains(e.target)) {
+    document.getElementById('ex-picker-dropdown')?.classList.add('hidden');
+    document.getElementById('ex-picker-chevron').style.transform = '';
+  }
+});
+
+function setExMetric(metric) {
   exMetric = metric;
-  document.getElementById('toggle-weight').className = 'btn btn-sm' + (metric==='weight' ? ' btn-primary' : '');
-  document.getElementById('toggle-volume').className = 'btn btn-sm' + (metric==='volume' ? ' btn-primary' : '');
+  ['weight','reps','sets','volume'].forEach(m => {
+    document.getElementById('m-'+m).classList.toggle('active', m === metric);
+  });
   renderExerciseChart();
 }
 
 function renderExerciseChart() {
-  const ex = document.getElementById('ex-select').value;
+  const ex = selectedEx;
   const canvas = document.getElementById('exercise-chart');
   const emptyEl = document.getElementById('ex-chart-empty');
   const prBadge = document.getElementById('pr-badge');
@@ -1131,7 +1195,6 @@ function renderExerciseChart() {
 
   if (!ex) { canvas.style.display='none'; emptyEl.style.display='none'; prBadge.style.display='none'; return; }
 
-  // Collect sessions that include this exercise, oldest first
   const sessions = workouts
     .filter(w => (w.sets||{})[ex]?.length)
     .slice(0, 30)
@@ -1151,14 +1214,16 @@ function renderExerciseChart() {
   let data, yLabel, pr, prText;
   if (exMetric === 'weight') {
     data = sessions.map(w => Math.max(...(w.sets[ex] || []).map(s => s.weight || 0)));
-    yLabel = 'kg';
-    pr = Math.max(...data);
-    prText = pr + ' kg';
+    yLabel = 'kg'; pr = Math.max(...data); prText = pr + ' kg';
+  } else if (exMetric === 'reps') {
+    data = sessions.map(w => Math.max(...(w.sets[ex] || []).map(s => s.reps || 0)));
+    yLabel = 'reps'; pr = Math.max(...data); prText = pr + ' reps';
+  } else if (exMetric === 'sets') {
+    data = sessions.map(w => (w.sets[ex] || []).length);
+    yLabel = 'sets'; pr = Math.max(...data); prText = pr + ' sets';
   } else {
     data = sessions.map(w => Math.round((w.sets[ex] || []).reduce((a,s) => a + (s.weight||0)*s.reps, 0)));
-    yLabel = 'kg vol';
-    pr = Math.max(...data);
-    prText = pr.toLocaleString() + ' kg vol';
+    yLabel = 'kg vol'; pr = Math.max(...data); prText = pr.toLocaleString() + ' kg vol';
   }
 
   const colors = chartColors();
