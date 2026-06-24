@@ -58,6 +58,23 @@
           "weight": 60
         }
       ]
+    },
+    {
+      "name": "Legs",
+      "exercises": [
+        {
+          "name": "Pistol Box Squats",
+          "sets": 3,
+          "reps": 8,
+          "weight": 60
+        },
+        {
+          "name": "Lunges",
+          "sets": null,
+          "reps": null,
+          "weight": null
+        }
+      ]
     }
   ]
 }
