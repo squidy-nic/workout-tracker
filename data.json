@@ -1,6 +1,30 @@
 {
   "workouts": [
     {
+      "name": "pu",
+      "startTime": 1782316991120,
+      "exercises": [
+        "dwad"
+      ],
+      "sets": {
+        "dwad": [
+          {
+            "weight": 60,
+            "reps": 10,
+            "notes": "",
+            "time": "12:03 am"
+          },
+          {
+            "weight": 60,
+            "reps": 10,
+            "notes": "",
+            "time": "12:03 am"
+          }
+        ]
+      },
+      "endTime": 1782317009129
+    },
+    {
       "name": "test",
       "startTime": 1782316913248,
       "exercises": [],
