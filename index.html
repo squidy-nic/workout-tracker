@@ -2,377 +2,403 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Workout" />
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#252523" media="(prefers-color-scheme: dark)" />
 <title>Workout Tracker</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   :root {
     --bg: #f5f5f3; --surface: #ffffff; --surface2: #f1efe8;
-    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
-    --text: #1a1a1a; --text2: #6b6b68; --text3: #a0a09b;
+    --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.2);
+    --text: #1a1a1a; --text2: #6b6b68; --text3: #b0b0aa;
     --blue: #185fa5; --blue-bg: #e6f1fb; --blue-text: #0c447c;
     --green: #3b6d11; --green-bg: #eaf3de; --green-text: #27500a;
     --red: #a32d2d; --red-bg: #fcebeb; --red-text: #791f1f;
-    --amber-bg: #faeeda; --amber-text: #854f0b;
-    --radius: 8px; --radius-lg: 12px;
+    --radius: 12px; --radius-lg: 16px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --nav-h: 64px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #1c1c1a; --surface: #252523; --surface2: #2e2e2b;
-      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
-      --text: #f0ede6; --text2: #a0a09b; --text3: #6b6b68;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+      --text: #f0ede6; --text2: #a0a09b; --text3: #5a5a56;
       --blue: #85b7eb; --blue-bg: #042c53; --blue-text: #b5d4f4;
       --green: #97c459; --green-bg: #173404; --green-text: #c0dd97;
       --red: #f09595; --red-bg: #501313; --red-text: #f7c1c1;
-      --amber-bg: #412402; --amber-text: #fac775;
     }
   }
 
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.5; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    font-size: 16px; line-height: 1.5;
+    overflow-x: hidden;
+  }
 
-  .app-header { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; gap: 12px; }
-  .app-header h1 { font-size: 17px; font-weight: 600; flex-shrink: 0; }
-  .header-right { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .sync-status { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
-  .dot.green { background: var(--green); }
-  .dot.amber { background: #ef9f27; }
-  .dot.red { background: var(--red); }
+  /* ── Header ── */
+  .hdr {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .hdr-title { font-size: 18px; font-weight: 700; }
+  .hdr-right { display: flex; align-items: center; gap: 8px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); }
+  .sync-dot.green { background: #63c217; }
+  .sync-dot.amber { background: #ef9f27; }
+  .sync-dot.red { background: var(--red); }
+  .sync-label { font-size: 12px; color: var(--text2); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: var(--green-bg); color: var(--green-text); }
+  .pill.off { background: var(--surface2); color: var(--text2); }
+  .icon-btn { width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text2); }
+  .icon-btn:active { opacity: 0.6; }
 
-  .main { max-width: 720px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
-  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  @media (max-width: 580px) { .columns { grid-template-columns: 1fr; } }
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    padding-bottom: var(--safe-bottom);
+    z-index: 50;
+    height: calc(var(--nav-h) + var(--safe-bottom));
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; border: none; background: none; cursor: pointer;
+    color: var(--text3); font-size: 11px; font-weight: 500;
+    padding: 8px 0; height: var(--nav-h);
+    transition: color 0.15s;
+  }
+  .nav-btn.active { color: var(--blue); }
+  .nav-icon { font-size: 22px; line-height: 1; }
 
-  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
-  .card-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); margin-bottom: 0.75rem; }
+  /* ── Scroll area ── */
+  .page { display: none; flex-direction: column; padding: 16px 16px calc(var(--nav-h) + var(--safe-bottom) + 16px); min-height: 100vh; }
+  .page.active { display: flex; }
 
-  button { font-family: inherit; font-size: 14px; cursor: pointer; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text); padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; transition: background 0.1s, opacity 0.1s; white-space: nowrap; }
-  button:hover { background: var(--surface2); }
-  button:active { opacity: 0.8; }
-  button:disabled { opacity: 0.35; cursor: default; }
-  button.btn-primary { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
-  button.btn-success { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
-  button.btn-danger { background: var(--red-bg); color: var(--red-text); border-color: var(--red); }
-  button.btn-icon { padding: 6px 8px; border: none; background: none; color: var(--text2); }
-  button.btn-icon:hover { color: var(--text); background: var(--surface2); }
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); margin-bottom: 12px; }
 
-  input[type=text], input[type=number], input[type=password] { font-family: inherit; font-size: 14px; background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius); color: var(--text); padding: 7px 10px; outline: none; width: 100%; transition: border-color 0.15s; }
+  /* ── Buttons ── */
+  .btn { font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text); padding: 12px 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; transition: opacity 0.1s; width: 100%; }
+  .btn:active { opacity: 0.65; }
+  .btn-primary { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
+  .btn-success { background: var(--green-bg); color: var(--green-text); border-color: var(--green); }
+  .btn-danger  { background: var(--red-bg);  color: var(--red-text);  border-color: var(--red); }
+  .btn-sm { font-size: 13px; min-height: 36px; padding: 8px 14px; width: auto; }
+  .btn-ghost { border: none; background: none; color: var(--text2); font-size: 20px; width: 40px; min-height: 40px; padding: 0; }
+
+  /* ── Inputs ── */
+  input[type=text], input[type=number], input[type=password] {
+    font-family: inherit; font-size: 16px; background: var(--surface2);
+    border: 0.5px solid var(--border2); border-radius: var(--radius);
+    color: var(--text); padding: 12px 14px; outline: none; width: 100%;
+    min-height: 48px; -webkit-appearance: none; appearance: none;
+  }
   input:focus { border-color: var(--blue); }
 
-  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .row label { font-size: 13px; color: var(--text2); min-width: 72px; flex-shrink: 0; }
-  .row input { flex: 1; }
+  /* ── Form row ── */
+  .form-row { margin-bottom: 10px; }
+  .form-row label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+  .input-with-unit { display: flex; gap: 8px; align-items: center; }
+  .input-with-unit input { flex: 1; }
+  .unit { font-size: 14px; color: var(--text2); white-space: nowrap; }
 
-  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
-  .stat-cell { background: var(--surface2); border-radius: var(--radius); padding: 0.6rem 0.75rem; text-align: center; }
-  .stat-val { font-size: 22px; font-weight: 600; }
-  .stat-lbl { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  /* ── Stats grid ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat-box { background: var(--surface2); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .stat-val { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-lbl { font-size: 12px; color: var(--text2); margin-top: 3px; }
 
-  .ex-list { display: flex; flex-direction: column; gap: 5px; }
-  .ex-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface2); cursor: pointer; font-size: 14px; border: 0.5px solid transparent; transition: background 0.1s; }
-  .ex-item:hover { border-color: var(--border2); }
-  .ex-item.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue-text); }
-  .ex-name { flex: 1; font-weight: 500; }
-  .ex-badge { font-size: 11px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px; padding: 1px 8px; color: var(--text2); }
-  .ex-item.active .ex-badge { background: var(--blue-bg); border-color: var(--blue); color: var(--blue-text); }
+  /* ── Exercise list ── */
+  .ex-list { display: flex; flex-direction: column; gap: 6px; }
+  .ex-item { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: var(--radius); background: var(--surface2); cursor: pointer; border: 1.5px solid transparent; min-height: 52px; }
+  .ex-item.active { background: var(--blue-bg); border-color: var(--blue); }
+  .ex-name { flex: 1; font-weight: 600; font-size: 15px; }
+  .ex-item.active .ex-name { color: var(--blue-text); }
+  .ex-count { font-size: 12px; color: var(--text2); background: var(--surface); border-radius: 20px; padding: 2px 9px; }
+  .ex-item.active .ex-count { background: var(--blue-bg); color: var(--blue-text); }
 
-  .set-list { display: flex; flex-direction: column; gap: 5px; margin-top: 0.75rem; }
-  .set-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius); background: var(--surface2); font-size: 14px; }
-  .set-num { font-size: 12px; color: var(--text2); min-width: 22px; font-weight: 600; }
+  /* ── Set log ── */
+  .set-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .set-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface2); }
+  .set-num { font-size: 12px; font-weight: 700; color: var(--text3); min-width: 20px; }
   .set-detail { flex: 1; }
-  .set-weight { font-weight: 600; }
-  .set-meta { font-size: 12px; color: var(--text2); margin-top: 1px; }
-  .set-time { font-size: 11px; color: var(--text3); }
-  .checkmark { color: var(--green); font-size: 16px; }
+  .set-main { font-size: 15px; font-weight: 600; }
+  .set-note { font-size: 13px; color: var(--text2); margin-top: 1px; }
+  .set-time { font-size: 12px; color: var(--text3); }
+  .set-check { color: var(--green); font-size: 18px; }
 
-  .timer-big { font-size: 64px; font-weight: 300; text-align: center; letter-spacing: 3px; line-height: 1; padding: 0.5rem 0; font-variant-numeric: tabular-nums; }
-  .timer-status { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 4px; min-height: 20px; }
-  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 8px 0 12px; }
-  .progress-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width 0.9s linear; }
-  .preset-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; flex-wrap: wrap; }
-  .preset-btn { padding: 5px 12px; font-size: 13px; }
-  .preset-btn.active-preset { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
-  .timer-actions { display: flex; gap: 8px; justify-content: center; }
+  /* ── Timer ── */
+  .timer-display { font-size: 80px; font-weight: 200; text-align: center; letter-spacing: 4px; line-height: 1; padding: 8px 0; font-variant-numeric: tabular-nums; }
+  .timer-label { font-size: 14px; color: var(--text2); text-align: center; min-height: 22px; margin-bottom: 4px; }
+  .progress-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin: 10px 0 16px; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width 0.9s linear; }
+  .preset-row { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .preset-btn { font-size: 13px; min-height: 36px; padding: 0 14px; width: auto; }
+  .preset-btn.on { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue); }
+  .timer-actions { display: flex; gap: 10px; }
+  .timer-actions .btn { flex: 1; }
 
-  .history-session { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 0.75rem; overflow: hidden; }
-  .history-header { display: flex; align-items: center; padding: 0.85rem 1rem; cursor: pointer; gap: 10px; }
-  .history-header:hover { background: var(--surface2); }
-  .history-name { font-weight: 600; flex: 1; }
-  .history-meta { font-size: 13px; color: var(--text2); }
-  .history-body { border-top: 0.5px solid var(--border); padding: 0.75rem 1rem; }
-  .history-ex { margin-bottom: 0.6rem; }
-  .history-ex-name { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-  .history-set { font-size: 13px; color: var(--text2); padding: 2px 0; }
+  /* ── History ── */
+  .hist-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; }
+  .hist-hdr { display: flex; align-items: center; padding: 14px 16px; cursor: pointer; gap: 10px; -webkit-user-select: none; user-select: none; }
+  .hist-hdr:active { background: var(--surface2); }
+  .hist-name { font-weight: 700; font-size: 16px; }
+  .hist-meta { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .hist-body { border-top: 0.5px solid var(--border); padding: 14px 16px; }
+  .hist-ex { margin-bottom: 10px; }
+  .hist-ex-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); margin-bottom: 4px; }
+  .hist-set { font-size: 14px; color: var(--text); padding: 2px 0; }
 
-  .nav-tabs { display: flex; gap: 4px; margin-bottom: 1rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 4px; }
-  .nav-tab { flex: 1; text-align: center; padding: 8px; border-radius: var(--radius); border: none; background: none; font-size: 14px; color: var(--text2); cursor: pointer; font-weight: 500; }
-  .nav-tab:hover { background: var(--surface2); color: var(--text); }
-  .nav-tab.active { background: var(--surface2); color: var(--text); border: 0.5px solid var(--border); }
+  /* ── Overlays ── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 200; }
+  .overlay.hidden { display: none; }
+  .sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 20px 20px calc(20px + var(--safe-bottom)); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+  .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 20px; }
+  .sheet h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .sheet .sub { font-size: 14px; color: var(--text2); margin-bottom: 20px; line-height: 1.6; }
+  .sheet-error { color: var(--red-text); font-size: 14px; margin-top: 10px; display: none; }
+  .sheet-note { font-size: 12px; color: var(--text3); margin-top: 16px; line-height: 1.5; }
 
-  .empty { text-align: center; color: var(--text2); font-size: 14px; padding: 1.5rem 0; }
-  .pill { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 20px; font-weight: 600; background: var(--green-bg); color: var(--green-text); }
-  .pill.inactive { background: var(--surface2); color: var(--text2); }
-  .finish-btn { width: 100%; justify-content: center; padding: 10px; font-size: 15px; margin-top: 0.5rem; }
+  .empty { text-align: center; color: var(--text2); font-size: 15px; padding: 40px 20px; }
+  .divider { height: 0.5px; background: var(--border); margin: 12px 0; }
 
-  /* ── Setup overlay ── */
-  #setup-overlay { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 1rem; }
-  .setup-modal { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; max-width: 420px; width: 100%; }
-  .setup-modal h2 { font-size: 20px; font-weight: 600; margin-bottom: 0.4rem; }
-  .setup-modal .sub { font-size: 14px; color: var(--text2); margin-bottom: 1.5rem; line-height: 1.6; }
-  .setup-row { margin-bottom: 12px; }
-  .setup-row label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 4px; }
-  .setup-hint { font-size: 12px; color: var(--text3); margin-top: 3px; }
-  #setup-error { color: var(--red-text); font-size: 13px; margin-top: 10px; display: none; }
-
-  /* ── Settings panel ── */
-  #settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 9998; padding: 1rem; }
-  #settings-overlay.open { display: flex; }
-  .settings-modal { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; max-width: 420px; width: 100%; }
-  .settings-modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+  /* ── Add exercise inline ── */
+  .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .add-row input { flex: 1; }
+  .add-row .btn { width: auto; min-height: 48px; padding: 0 18px; font-size: 20px; }
 </style>
 </head>
 <body>
 
-<!-- Setup overlay (shown if no token saved) -->
-<div id="setup-overlay">
-  <div class="setup-modal">
+<!-- Setup sheet -->
+<div class="overlay" id="setup-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
     <h2>&#127947; Workout Tracker</h2>
-    <p class="sub">Your workouts sync to GitHub so you can access them on any device. Enter your details once — they're stored only in this browser.</p>
-    <div class="setup-row">
+    <p class="sub">Your workouts sync to GitHub so you can access them on any device. Enter your details once per device.</p>
+    <div class="form-row">
       <label>GitHub Personal Access Token</label>
       <input type="password" id="setup-token" placeholder="ghp_..." autocomplete="off" />
-      <div class="setup-hint">Needs <strong>repo</strong> scope. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Workout+Tracker" target="_blank" style="color:var(--blue)">Create one &#8599;</a></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px">Needs <strong>repo</strong> scope. <a href="https://github.com/settings/tokens/new?scopes=repo&description=Workout+Tracker" target="_blank" style="color:var(--blue)">Create one &#8599;</a></div>
     </div>
-    <div class="setup-row">
+    <div class="form-row">
       <label>GitHub username</label>
-      <input type="text" id="setup-owner" placeholder="your-username" value="squidy-nic" />
+      <input type="text" id="setup-owner" value="squidy-nic" autocomplete="off" autocapitalize="none" />
     </div>
-    <div class="setup-row">
+    <div class="form-row">
       <label>Repository name</label>
-      <input type="text" id="setup-repo" placeholder="workout-tracker" value="workout-tracker" />
+      <input type="text" id="setup-repo" value="workout-tracker" autocomplete="off" autocapitalize="none" />
     </div>
-    <button class="btn-primary" style="width:100%;justify-content:center;padding:10px;font-size:15px;margin-top:4px" onclick="setupConnect()">Connect &#8594;</button>
-    <div id="setup-error"></div>
-    <p style="font-size:12px;color:var(--text3);margin-top:1.25rem">Your token is saved only in this browser's localStorage and is never sent anywhere except GitHub's API.</p>
+    <button class="btn btn-primary" style="margin-top:4px" onclick="setupConnect()" id="setup-btn">Connect &#8594;</button>
+    <div class="sheet-error" id="setup-error"></div>
+    <p class="sheet-note">Your token is saved only in this browser and is never sent anywhere except GitHub's API.</p>
   </div>
 </div>
 
-<!-- Settings overlay -->
-<div id="settings-overlay">
-  <div class="settings-modal">
-    <h3>&#9881; Settings</h3>
-    <div class="setup-row">
+<!-- Settings sheet -->
+<div class="overlay hidden" id="settings-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Settings</h2>
+    <div class="form-row">
       <label>GitHub token</label>
       <input type="password" id="cfg-token" autocomplete="off" />
     </div>
-    <div class="setup-row">
+    <div class="form-row">
       <label>Owner</label>
-      <input type="text" id="cfg-owner" />
+      <input type="text" id="cfg-owner" autocapitalize="none" />
     </div>
-    <div class="setup-row">
+    <div class="form-row">
       <label>Repository</label>
-      <input type="text" id="cfg-repo" />
+      <input type="text" id="cfg-repo" autocapitalize="none" />
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn-primary" style="flex:1;justify-content:center" onclick="saveSettings()">Save</button>
-      <button style="flex:1;justify-content:center" onclick="closeSettings()">Cancel</button>
+    <button class="btn btn-primary" style="margin-top:4px" onclick="saveSettings()">Save changes</button>
+    <div style="height:10px"></div>
+    <button class="btn" onclick="closeSettings()">Cancel</button>
+    <div class="divider"></div>
+    <button class="btn btn-danger" onclick="disconnect()">Disconnect &amp; clear token</button>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="hdr">
+  <div class="hdr-title">&#127947; Workout</div>
+  <div class="hdr-right">
+    <span class="sync-dot" id="sync-dot"></span>
+    <span class="sync-label" id="sync-label">Not connected</span>
+    <span class="pill off" id="session-pill">No session</span>
+    <button class="icon-btn" onclick="openSettings()" aria-label="Settings">&#9881;</button>
+  </div>
+</header>
+
+<!-- Pages -->
+
+<!-- WORKOUT PAGE -->
+<div class="page active" id="page-workout">
+
+  <!-- Session start / active -->
+  <div class="card" id="session-card">
+    <div id="start-ui">
+      <div class="form-row">
+        <label>Session name</label>
+        <input type="text" id="session-name" placeholder="e.g. Push day" onkeydown="if(event.key==='Enter')startSession()" autocapitalize="words" />
+      </div>
+      <button class="btn btn-primary" onclick="startSession()">&#9654; Start workout</button>
     </div>
-    <div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:12px">
-      <button class="btn-danger" style="width:100%;justify-content:center" onclick="disconnectGitHub()">Disconnect &amp; clear local data</button>
+    <div id="active-ui" style="display:none">
+      <div style="font-size:18px;font-weight:700;margin-bottom:12px" id="active-name"></div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="s-sets">0</div><div class="stat-lbl">sets</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-reps">0</div><div class="stat-lbl">reps</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-exercises">0</div><div class="stat-lbl">exercises</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-time">0:00</div><div class="stat-lbl">elapsed</div></div>
+      </div>
+      <button class="btn btn-danger" onclick="finishSession()">&#9632; Finish &amp; save to GitHub</button>
+    </div>
+  </div>
+
+  <!-- Add exercise -->
+  <div class="card" id="ex-card" style="display:none">
+    <div class="card-title">Exercises</div>
+    <div class="add-row">
+      <input type="text" id="ex-input" placeholder="Add exercise..." onkeydown="if(event.key==='Enter')addExercise()" autocapitalize="words" />
+      <button class="btn" onclick="addExercise()">+</button>
+    </div>
+    <div class="ex-list" id="ex-list"><div class="empty" style="padding:16px 0">Add your first exercise</div></div>
+  </div>
+
+  <!-- Log set (shown when exercise selected) -->
+  <div class="card" id="log-card" style="display:none">
+    <div class="card-title" id="log-card-title">Log set</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="form-row" style="margin:0">
+        <label>Weight (kg)</label>
+        <input type="number" id="l-weight" min="0" step="2.5" value="60" inputmode="decimal" />
+      </div>
+      <div class="form-row" style="margin:0">
+        <label>Reps</label>
+        <input type="number" id="l-reps" min="1" step="1" value="10" inputmode="numeric" />
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Notes (optional)</label>
+      <input type="text" id="l-notes" placeholder="e.g. felt strong" onkeydown="if(event.key==='Enter')logSet()" autocapitalize="sentences" />
+    </div>
+    <button class="btn btn-success" onclick="logSet()">&#10003; Log set</button>
+    <div class="set-list" id="set-list"></div>
+  </div>
+</div>
+
+<!-- TIMER PAGE -->
+<div class="page" id="page-timer">
+  <div class="card">
+    <div class="timer-label" id="timer-label">Ready</div>
+    <div class="timer-display" id="timer-display">1:30</div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
+    <div class="preset-row">
+      <button class="btn preset-btn" onclick="setPreset(45,this)">45s</button>
+      <button class="btn preset-btn on" onclick="setPreset(90,this)">1:30</button>
+      <button class="btn preset-btn" onclick="setPreset(120,this)">2 min</button>
+      <button class="btn preset-btn" onclick="setPreset(180,this)">3 min</button>
+      <button class="btn preset-btn" onclick="setPreset(300,this)">5 min</button>
+    </div>
+    <div class="timer-actions">
+      <button class="btn btn-primary" id="timer-toggle" onclick="toggleTimer()">&#9654; Start</button>
+      <button class="btn" onclick="resetTimer()" style="flex:0;width:auto;padding:0 20px">&#8635;</button>
     </div>
   </div>
 </div>
 
-<header class="app-header">
-  <h1>&#127947; Workout Tracker</h1>
-  <div class="header-right">
-    <div class="sync-status">
-      <span class="dot" id="sync-dot"></span>
-      <span id="sync-label">Not connected</span>
-    </div>
-    <span id="session-pill" class="pill inactive">No session</span>
-    <button class="btn-icon" onclick="openSettings()" title="Settings" style="font-size:18px;padding:4px 6px">&#9881;</button>
-  </div>
-</header>
-
-<main class="main">
-  <nav class="nav-tabs">
-    <button class="nav-tab active" onclick="showTab('workout')">Workout</button>
-    <button class="nav-tab" onclick="showTab('history')">History</button>
-  </nav>
-
-  <!-- WORKOUT TAB -->
-  <div id="tab-workout">
-    <div class="card">
-      <div class="card-title">Session</div>
-      <div id="start-ui">
-        <div class="row">
-          <label>Name</label>
-          <input type="text" id="session-name" placeholder="e.g. Push day" onkeydown="if(event.key==='Enter')startSession()" />
-        </div>
-        <button class="btn-primary" style="width:100%;justify-content:center;padding:9px" onclick="startSession()">&#9654; Start workout</button>
-      </div>
-      <div id="active-ui" style="display:none">
-        <div style="font-size:16px;font-weight:600;margin-bottom:10px" id="active-session-name"></div>
-        <div class="stats-bar">
-          <div class="stat-cell"><div class="stat-val" id="s-exercises">0</div><div class="stat-lbl">exercises</div></div>
-          <div class="stat-cell"><div class="stat-val" id="s-sets">0</div><div class="stat-lbl">sets</div></div>
-          <div class="stat-cell"><div class="stat-val" id="s-reps">0</div><div class="stat-lbl">reps</div></div>
-          <div class="stat-cell"><div class="stat-val" id="s-time">0:00</div><div class="stat-lbl">elapsed</div></div>
-        </div>
-        <button class="btn-danger finish-btn" onclick="finishSession()">&#9632; Finish &amp; save to GitHub</button>
-      </div>
-    </div>
-
-    <div id="workout-body" style="display:none">
-      <div class="columns">
-        <div>
-          <div class="card">
-            <div class="card-title">Exercises</div>
-            <div class="row" style="margin-bottom:10px">
-              <input type="text" id="ex-input" placeholder="Exercise name" onkeydown="if(event.key==='Enter')addExercise()" />
-              <button onclick="addExercise()" style="padding:7px 10px;flex-shrink:0">&#43;</button>
-            </div>
-            <div class="ex-list" id="ex-list"><div class="empty">Add an exercise to begin</div></div>
-          </div>
-        </div>
-        <div id="log-panel" style="display:none">
-          <div class="card">
-            <div class="card-title" id="log-title">Log set</div>
-            <div class="row">
-              <label>Weight</label>
-              <input type="number" id="l-weight" min="0" step="2.5" value="60" />
-              <span style="font-size:13px;color:var(--text2);flex-shrink:0">kg</span>
-            </div>
-            <div class="row">
-              <label>Reps</label>
-              <input type="number" id="l-reps" min="1" step="1" value="10" />
-            </div>
-            <div class="row">
-              <label>Notes</label>
-              <input type="text" id="l-notes" placeholder="Optional" onkeydown="if(event.key==='Enter')logSet()" />
-            </div>
-            <button class="btn-success" style="width:100%;justify-content:center;padding:9px;margin-top:4px" onclick="logSet()">&#10003; Log set</button>
-            <div class="set-list" id="set-list"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Rest timer</div>
-        <div class="timer-status" id="timer-status">Ready</div>
-        <div class="timer-big" id="timer-display">1:30</div>
-        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
-        <div class="preset-row">
-          <button class="preset-btn" onclick="setPreset(45,this)">45 s</button>
-          <button class="preset-btn active-preset" onclick="setPreset(90,this)">1:30</button>
-          <button class="preset-btn" onclick="setPreset(120,this)">2 min</button>
-          <button class="preset-btn" onclick="setPreset(180,this)">3 min</button>
-          <button class="preset-btn" onclick="setPreset(300,this)">5 min</button>
-        </div>
-        <div class="timer-actions">
-          <button class="btn-primary" id="timer-toggle" onclick="toggleTimer()" style="padding:9px 24px;font-size:15px">&#9654; Start</button>
-          <button onclick="resetTimer()">&#8635; Reset</button>
-        </div>
-      </div>
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span style="font-size:18px;font-weight:700">History</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="loadHistory()">&#8635; Refresh</button>
+      <button class="btn btn-sm btn-danger" onclick="clearAll()">Clear all</button>
     </div>
   </div>
+  <div id="history-list"><div class="empty">No workouts yet</div></div>
+</div>
 
-  <!-- HISTORY TAB -->
-  <div id="tab-history" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
-      <span style="font-size:15px;font-weight:600">Past workouts</span>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="loadHistory()" style="font-size:12px;padding:5px 10px">&#8635; Refresh</button>
-        <button onclick="clearAllHistory()" class="btn-danger" style="font-size:12px;padding:5px 10px">Clear all</button>
-      </div>
-    </div>
-    <div id="history-list"><div class="empty">Loading...</div></div>
-  </div>
-</main>
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('workout',this)" id="nav-workout">
+    <span class="nav-icon">&#127947;</span>
+    <span>Workout</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('timer',this)" id="nav-timer">
+    <span class="nav-icon">&#9202;</span>
+    <span>Timer</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('history',this)" id="nav-history">
+    <span class="nav-icon">&#128196;</span>
+    <span>History</span>
+  </button>
+</nav>
 
 <script>
-// ── Config (stored in localStorage) ──
-const CFG_KEY = 'wt_cfg';
-let cfg = null;
-let workoutsFileSha = null;
-let history = [];
+// ── Config ──
+const CFG_KEY = 'wt_cfg2';
+let cfg = null, history = [], fileSha = null;
 
-function loadCfg() {
-  try { cfg = JSON.parse(localStorage.getItem(CFG_KEY)); } catch { cfg = null; }
-}
+function loadCfg() { try { cfg = JSON.parse(localStorage.getItem(CFG_KEY)); } catch { cfg = null; } }
+function saveCfg(t,o,r) { cfg={token:t,owner:o,repo:r}; localStorage.setItem(CFG_KEY,JSON.stringify(cfg)); }
 
-function saveCfg(token, owner, repo) {
-  cfg = { token, owner, repo };
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-}
-
-// ── GitHub API ──
-async function ghFetch(path, opts = {}) {
-  const resp = await fetch('https://api.github.com' + path, {
+// ── GitHub ──
+async function ghFetch(path, opts={}) {
+  return fetch('https://api.github.com'+path, {
     ...opts,
-    headers: {
-      Authorization: 'token ' + cfg.token,
-      Accept: 'application/vnd.github.v3+json',
-      'Content-Type': 'application/json',
-      ...(opts.headers || {})
-    }
+    headers: { Authorization:'token '+cfg.token, Accept:'application/vnd.github.v3+json', 'Content-Type':'application/json', ...(opts.headers||{}) }
   });
-  return resp;
 }
 
-async function loadWorkoutsFromGitHub() {
-  setSyncStatus('amber', 'Syncing...');
+async function loadFromGH() {
+  setSyncStatus('amber','Syncing...');
   try {
-    const resp = await ghFetch(`/repos/${cfg.owner}/${cfg.repo}/contents/workouts.json`);
-    if (resp.status === 404) {
-      history = [];
-      workoutsFileSha = null;
-      setSyncStatus('green', cfg.owner + '/' + cfg.repo);
-      return true;
-    }
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    workoutsFileSha = data.sha;
-    history = JSON.parse(atob(data.content.replace(/\n/g, '')));
-    if (!Array.isArray(history)) history = [];
-    setSyncStatus('green', cfg.owner + '/' + cfg.repo);
+    const r = await ghFetch(`/repos/${cfg.owner}/${cfg.repo}/contents/workouts.json`);
+    if (r.status===404) { history=[]; fileSha=null; setSyncStatus('green',cfg.owner+'/'+cfg.repo); return true; }
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    fileSha = d.sha;
+    history = JSON.parse(atob(d.content.replace(/\n/g,'')));
+    if (!Array.isArray(history)) history=[];
+    setSyncStatus('green',cfg.owner+'/'+cfg.repo);
     return true;
-  } catch (e) {
-    setSyncStatus('red', 'Sync error');
-    return false;
-  }
+  } catch(e) { setSyncStatus('red','Sync error'); return false; }
 }
 
-async function saveWorkoutsToGitHub() {
-  setSyncStatus('amber', 'Saving...');
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(history, null, 2))));
-  const body = JSON.stringify({
-    message: 'Update workouts ' + new Date().toISOString().slice(0,10),
-    content,
-    ...(workoutsFileSha ? { sha: workoutsFileSha } : {})
-  });
+async function saveToGH() {
+  setSyncStatus('amber','Saving...');
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(history,null,2))));
+  const body = JSON.stringify({ message:'Update workouts '+new Date().toISOString().slice(0,10), content, ...(fileSha?{sha:fileSha}:{}) });
   try {
-    const resp = await ghFetch(`/repos/${cfg.owner}/${cfg.repo}/contents/workouts.json`, { method: 'PUT', body });
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.message || 'HTTP ' + resp.status);
-    }
-    const data = await resp.json();
-    workoutsFileSha = data.content.sha;
-    setSyncStatus('green', cfg.owner + '/' + cfg.repo);
+    const r = await ghFetch(`/repos/${cfg.owner}/${cfg.repo}/contents/workouts.json`,{method:'PUT',body});
+    if (!r.ok) { const e=await r.json(); throw new Error(e.message||'HTTP '+r.status); }
+    const d = await r.json();
+    fileSha = d.content.sha;
+    setSyncStatus('green',cfg.owner+'/'+cfg.repo);
     return true;
-  } catch (e) {
-    setSyncStatus('red', 'Save failed: ' + e.message);
-    alert('Could not save to GitHub: ' + e.message);
-    return false;
-  }
+  } catch(e) { setSyncStatus('red','Save failed'); alert('Could not save: '+e.message); return false; }
 }
 
-function setSyncStatus(color, label) {
-  document.getElementById('sync-dot').className = 'dot ' + color;
-  document.getElementById('sync-label').textContent = label;
+function setSyncStatus(c,l) {
+  document.getElementById('sync-dot').className='sync-dot '+c;
+  document.getElementById('sync-label').textContent=l;
 }
 
 // ── Setup ──
@@ -381,327 +407,308 @@ async function setupConnect() {
   const owner = document.getElementById('setup-owner').value.trim();
   const repo  = document.getElementById('setup-repo').value.trim();
   const errEl = document.getElementById('setup-error');
-  errEl.style.display = 'none';
-  if (!token || !owner || !repo) { showSetupError('All fields are required.'); return; }
-  saveCfg(token, owner, repo);
-  const ok = await loadWorkoutsFromGitHub();
-  if (ok) {
-    document.getElementById('setup-overlay').style.display = 'none';
-    renderHistory();
-  } else {
-    showSetupError('Could not connect. Check your token and repo name.');
-  }
+  errEl.style.display='none';
+  if (!token||!owner||!repo) { showErr(errEl,'All fields required.'); return; }
+  const btn = document.getElementById('setup-btn');
+  btn.disabled=true; btn.textContent='Connecting...';
+  saveCfg(token,owner,repo);
+  const ok = await loadFromGH();
+  btn.disabled=false; btn.textContent='Connect →';
+  if (ok) { document.getElementById('setup-overlay').classList.add('hidden'); renderHistory(); }
+  else showErr(errEl,'Could not connect. Check your token and repo name.');
 }
-
-function showSetupError(msg) {
-  const el = document.getElementById('setup-error');
-  el.textContent = msg;
-  el.style.display = '';
-}
+function showErr(el,msg) { el.textContent=msg; el.style.display=''; }
 
 // ── Settings ──
 function openSettings() {
-  document.getElementById('cfg-token').value = cfg ? cfg.token : '';
-  document.getElementById('cfg-owner').value = cfg ? cfg.owner : '';
-  document.getElementById('cfg-repo').value  = cfg ? cfg.repo  : '';
-  document.getElementById('settings-overlay').classList.add('open');
+  document.getElementById('cfg-token').value = cfg?.token||'';
+  document.getElementById('cfg-owner').value = cfg?.owner||'';
+  document.getElementById('cfg-repo').value  = cfg?.repo||'';
+  document.getElementById('settings-overlay').classList.remove('hidden');
 }
-
-function closeSettings() {
-  document.getElementById('settings-overlay').classList.remove('open');
-}
-
+function closeSettings() { document.getElementById('settings-overlay').classList.add('hidden'); }
 async function saveSettings() {
   const token = document.getElementById('cfg-token').value.trim();
   const owner = document.getElementById('cfg-owner').value.trim();
   const repo  = document.getElementById('cfg-repo').value.trim();
-  if (!token || !owner || !repo) return;
-  saveCfg(token, owner, repo);
+  if (!token||!owner||!repo) return;
+  saveCfg(token,owner,repo);
   closeSettings();
-  await loadWorkoutsFromGitHub();
+  await loadFromGH();
 }
-
-function disconnectGitHub() {
-  if (!confirm('Remove your GitHub token and all locally cached data from this browser?')) return;
+function disconnect() {
+  if (!confirm('Remove your token from this device?')) return;
   localStorage.removeItem(CFG_KEY);
-  cfg = null;
-  history = [];
-  workoutsFileSha = null;
+  cfg=null; history=[]; fileSha=null;
   closeSettings();
-  document.getElementById('setup-overlay').style.display = 'flex';
-  setSyncStatus('', 'Not connected');
+  document.getElementById('setup-overlay').classList.remove('hidden');
+  setSyncStatus('','Not connected');
 }
 
-// ── Tabs ──
-function showTab(t) {
-  document.getElementById('tab-workout').style.display = t === 'workout' ? '' : 'none';
-  document.getElementById('tab-history').style.display = t === 'history' ? '' : 'none';
-  document.querySelectorAll('.nav-tab').forEach((el, i) => {
-    el.classList.toggle('active', (i === 0 && t === 'workout') || (i === 1 && t === 'history'));
-  });
-  if (t === 'history') renderHistory();
+// ── Pages ──
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='history') renderHistory();
 }
 
 // ── Session ──
-const S = { session: null, activeEx: null, elapsedInterval: null };
-const T = { duration: 90, remaining: 90, running: false, interval: null };
+const S = { session:null, activeEx:null, elapsedInterval:null };
+const T = { duration:90, remaining:90, running:false, interval:null };
 
 function startSession() {
   const name = document.getElementById('session-name').value.trim() || 'Workout';
-  S.session = { name, startTime: Date.now(), exercises: [], sets: {} };
+  S.session = { name, startTime:Date.now(), exercises:[], sets:{} };
   S.activeEx = null;
-  document.getElementById('start-ui').style.display = 'none';
-  document.getElementById('active-ui').style.display = '';
-  document.getElementById('workout-body').style.display = '';
-  document.getElementById('active-session-name').textContent = name;
-  document.getElementById('session-pill').textContent = name;
-  document.getElementById('session-pill').className = 'pill';
-  S.elapsedInterval = setInterval(updateElapsed, 1000);
+  document.getElementById('start-ui').style.display='none';
+  document.getElementById('active-ui').style.display='';
+  document.getElementById('ex-card').style.display='';
+  document.getElementById('log-card').style.display='none';
+  document.getElementById('active-name').textContent=name;
+  document.getElementById('session-pill').textContent=name;
+  document.getElementById('session-pill').className='pill';
+  S.elapsedInterval = setInterval(updateElapsed,1000);
   updateStats();
 }
 
 async function finishSession() {
   if (!S.session) return;
-  if (Object.keys(S.session.sets).length === 0 && !confirm('No sets logged. Save anyway?')) return;
-  clearInterval(S.elapsedInterval);
-  clearInterval(T.interval);
-  T.running = false;
-  history.unshift({ ...S.session, endTime: Date.now() });
-  const ok = await saveWorkoutsToGitHub();
+  const totalSets = Object.values(S.session.sets).reduce((a,b)=>a+b.length,0);
+  if (totalSets===0 && !confirm('No sets logged. Save anyway?')) return;
+  clearInterval(S.elapsedInterval); clearInterval(T.interval); T.running=false;
+  history.unshift({...S.session, endTime:Date.now()});
+  const ok = await saveToGH();
   if (!ok) { history.shift(); return; }
-  S.session = null; S.activeEx = null;
-  document.getElementById('start-ui').style.display = '';
-  document.getElementById('active-ui').style.display = 'none';
-  document.getElementById('workout-body').style.display = 'none';
-  document.getElementById('session-pill').textContent = 'No session';
-  document.getElementById('session-pill').className = 'pill inactive';
-  document.getElementById('ex-list').innerHTML = '<div class="empty">Add an exercise to begin</div>';
-  document.getElementById('log-panel').style.display = 'none';
-  document.getElementById('session-name').value = '';
+  S.session=null; S.activeEx=null;
+  document.getElementById('start-ui').style.display='';
+  document.getElementById('active-ui').style.display='none';
+  document.getElementById('ex-card').style.display='none';
+  document.getElementById('log-card').style.display='none';
+  document.getElementById('session-pill').textContent='No session';
+  document.getElementById('session-pill').className='pill off';
+  document.getElementById('session-name').value='';
   resetTimerState();
-  alert('Workout saved to GitHub!');
+  alert('Saved to GitHub!');
 }
 
 function updateElapsed() {
   if (!S.session) return;
-  const s = Math.floor((Date.now() - S.session.startTime) / 1000);
-  document.getElementById('s-time').textContent = Math.floor(s/60) + ':' + pad(s%60);
+  const s=Math.floor((Date.now()-S.session.startTime)/1000);
+  document.getElementById('s-time').textContent=Math.floor(s/60)+':'+pad(s%60);
 }
 
 function updateStats() {
   if (!S.session) return;
-  document.getElementById('s-exercises').textContent = S.session.exercises.length;
-  let sets = 0, reps = 0;
-  Object.values(S.session.sets).forEach(arr => { sets += arr.length; arr.forEach(s => reps += s.reps); });
-  document.getElementById('s-sets').textContent = sets;
-  document.getElementById('s-reps').textContent = reps;
+  let sets=0, reps=0;
+  Object.values(S.session.sets).forEach(arr=>{sets+=arr.length; arr.forEach(s=>reps+=s.reps);});
+  document.getElementById('s-sets').textContent=sets;
+  document.getElementById('s-reps').textContent=reps;
+  document.getElementById('s-exercises').textContent=S.session.exercises.length;
 }
 
 // ── Exercises ──
 function addExercise() {
-  const input = document.getElementById('ex-input');
-  const name = input.value.trim();
-  if (!name || !S.session) return;
-  if (!S.session.exercises.includes(name)) { S.session.exercises.push(name); S.session.sets[name] = []; }
-  input.value = '';
+  const inp = document.getElementById('ex-input');
+  const name = inp.value.trim();
+  if (!name||!S.session) return;
+  if (!S.session.exercises.includes(name)) { S.session.exercises.push(name); S.session.sets[name]=[]; }
+  inp.value='';
   renderExercises(); selectEx(name); updateStats();
 }
 
 function removeExercise(name) {
   if (!S.session) return;
-  S.session.exercises = S.session.exercises.filter(x => x !== name);
+  S.session.exercises=S.session.exercises.filter(x=>x!==name);
   delete S.session.sets[name];
-  if (S.activeEx === name) {
-    S.activeEx = S.session.exercises[0] || null;
-    if (S.activeEx) renderSetLog(); else document.getElementById('log-panel').style.display = 'none';
+  if (S.activeEx===name) {
+    S.activeEx=S.session.exercises[0]||null;
+    if (S.activeEx) renderSetLog(); else document.getElementById('log-card').style.display='none';
   }
   renderExercises(); updateStats();
 }
 
 function selectEx(name) {
-  S.activeEx = name;
+  S.activeEx=name;
   renderExercises();
-  document.getElementById('log-panel').style.display = '';
-  document.getElementById('log-title').textContent = 'Log set — ' + name;
+  document.getElementById('log-card').style.display='';
+  document.getElementById('log-card-title').textContent=name;
   renderSetLog();
+  document.getElementById('log-card').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 function renderExercises() {
-  const list = document.getElementById('ex-list');
-  if (!S.session || !S.session.exercises.length) { list.innerHTML = '<div class="empty">Add an exercise to begin</div>'; return; }
-  list.innerHTML = S.session.exercises.map(ex => {
-    const cnt = (S.session.sets[ex]||[]).length;
+  const list=document.getElementById('ex-list');
+  if (!S.session||!S.session.exercises.length) { list.innerHTML='<div class="empty" style="padding:16px 0">Add your first exercise</div>'; return; }
+  list.innerHTML=S.session.exercises.map(ex=>{
+    const cnt=(S.session.sets[ex]||[]).length;
     return `<div class="ex-item${ex===S.activeEx?' active':''}" onclick="selectEx(${JSON.stringify(ex)})">
       <span class="ex-name">${esc(ex)}</span>
-      <span class="ex-badge">${cnt} set${cnt!==1?'s':''}</span>
-      <button class="btn-icon" style="padding:2px 4px;font-size:13px" onclick="event.stopPropagation();removeExercise(${JSON.stringify(ex)})">&#215;</button>
+      <span class="ex-count">${cnt} set${cnt!==1?'s':''}</span>
+      <button class="btn-ghost" style="font-size:18px;color:var(--text3)" onclick="event.stopPropagation();removeExercise(${JSON.stringify(ex)})">&#215;</button>
     </div>`;
   }).join('');
 }
 
 // ── Sets ──
 function logSet() {
-  if (!S.activeEx || !S.session) return;
-  const weight = parseFloat(document.getElementById('l-weight').value)||0;
-  const reps = parseInt(document.getElementById('l-reps').value)||0;
-  if (reps <= 0) { document.getElementById('l-reps').focus(); return; }
-  const notes = document.getElementById('l-notes').value.trim();
-  S.session.sets[S.activeEx].push({ weight, reps, notes, time: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) });
-  document.getElementById('l-notes').value = '';
-  renderSetLog(); renderExercises(); updateStats(); startRestAuto();
+  if (!S.activeEx||!S.session) return;
+  const weight=parseFloat(document.getElementById('l-weight').value)||0;
+  const reps=parseInt(document.getElementById('l-reps').value)||0;
+  if (reps<=0) { document.getElementById('l-reps').focus(); return; }
+  const notes=document.getElementById('l-notes').value.trim();
+  S.session.sets[S.activeEx].push({weight,reps,notes,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+  document.getElementById('l-notes').value='';
+  renderSetLog(); renderExercises(); updateStats();
+  autoTimer();
 }
 
-function deleteSet(ex, idx) {
-  S.session.sets[ex].splice(idx, 1);
+function deleteSet(ex,idx) {
+  S.session.sets[ex].splice(idx,1);
   renderSetLog(); renderExercises(); updateStats();
 }
 
 function renderSetLog() {
-  const list = document.getElementById('set-list');
-  if (!S.activeEx || !S.session) { list.innerHTML = ''; return; }
-  const sets = S.session.sets[S.activeEx]||[];
-  if (!sets.length) { list.innerHTML = '<div class="empty" style="padding:0.75rem 0">No sets logged yet</div>'; return; }
-  list.innerHTML = sets.map((s,i) => `
+  const list=document.getElementById('set-list');
+  if (!S.activeEx||!S.session) { list.innerHTML=''; return; }
+  const sets=S.session.sets[S.activeEx]||[];
+  if (!sets.length) { list.innerHTML='<div class="empty" style="padding:12px 0;font-size:14px">No sets yet</div>'; return; }
+  list.innerHTML=sets.map((s,i)=>`
     <div class="set-item">
       <span class="set-num">${i+1}</span>
       <div class="set-detail">
-        <span class="set-weight">${s.reps} reps${s.weight>0?' &times; '+s.weight+' kg':''}</span>
-        ${s.notes?`<div class="set-meta">${esc(s.notes)}</div>`:''}
+        <div class="set-main">${s.reps} reps${s.weight>0?' &times; '+s.weight+'kg':''}</div>
+        ${s.notes?`<div class="set-note">${esc(s.notes)}</div>`:''}
       </div>
       <span class="set-time">${s.time}</span>
-      <span class="checkmark">&#10003;</span>
-      <button class="btn-icon" style="font-size:13px" onclick="deleteSet(${JSON.stringify(S.activeEx)},${i})">&#215;</button>
+      <span class="set-check">&#10003;</span>
+      <button class="btn-ghost" style="font-size:16px;color:var(--text3);width:32px;min-height:32px" onclick="deleteSet(${JSON.stringify(S.activeEx)},${i})">&#215;</button>
     </div>`).join('');
 }
 
 // ── Timer ──
-function setPreset(secs, btn) {
+function setPreset(secs,btn) {
   if (T.running) return;
-  T.duration = secs; T.remaining = secs;
+  T.duration=secs; T.remaining=secs;
   updateTimerUI();
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active-preset'));
-  btn.classList.add('active-preset');
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
 }
 
-function startRestAuto() {
+function autoTimer() {
   clearInterval(T.interval);
-  T.remaining = T.duration; T.running = true;
-  document.getElementById('timer-status').textContent = 'Resting...';
-  document.getElementById('timer-toggle').innerHTML = '&#9646;&#9646; Pause';
-  T.interval = setInterval(tickTimer, 1000);
+  T.remaining=T.duration; T.running=true;
+  document.getElementById('timer-label').textContent='Resting...';
+  document.getElementById('timer-toggle').textContent='⏸ Pause';
+  T.interval=setInterval(tickTimer,1000);
   updateTimerUI();
 }
 
 function toggleTimer() {
   if (T.running) {
-    clearInterval(T.interval); T.running = false;
-    document.getElementById('timer-toggle').innerHTML = '&#9654; Resume';
-    document.getElementById('timer-status').textContent = 'Paused';
+    clearInterval(T.interval); T.running=false;
+    document.getElementById('timer-toggle').innerHTML='&#9654; Resume';
+    document.getElementById('timer-label').textContent='Paused';
   } else {
-    if (T.remaining <= 0) T.remaining = T.duration;
-    T.running = true;
-    document.getElementById('timer-toggle').innerHTML = '&#9646;&#9646; Pause';
-    document.getElementById('timer-status').textContent = 'Resting...';
-    T.interval = setInterval(tickTimer, 1000);
+    if (T.remaining<=0) T.remaining=T.duration;
+    T.running=true;
+    document.getElementById('timer-toggle').innerHTML='&#9646;&#9646; Pause';
+    document.getElementById('timer-label').textContent='Resting...';
+    T.interval=setInterval(tickTimer,1000);
     updateTimerUI();
   }
 }
 
 function tickTimer() {
   T.remaining--;
-  if (T.remaining <= 0) {
-    T.remaining = 0; clearInterval(T.interval); T.running = false;
-    document.getElementById('timer-toggle').innerHTML = '&#9654; Start';
-    document.getElementById('timer-status').textContent = 'Rest done! ✓';
+  if (T.remaining<=0) {
+    T.remaining=0; clearInterval(T.interval); T.running=false;
+    document.getElementById('timer-toggle').innerHTML='&#9654; Start';
+    document.getElementById('timer-label').textContent='Rest done ✓';
   }
   updateTimerUI();
 }
 
 function resetTimer() {
-  clearInterval(T.interval); T.running = false; T.remaining = T.duration;
-  document.getElementById('timer-toggle').innerHTML = '&#9654; Start';
-  document.getElementById('timer-status').textContent = 'Ready';
+  clearInterval(T.interval); T.running=false; T.remaining=T.duration;
+  document.getElementById('timer-toggle').innerHTML='&#9654; Start';
+  document.getElementById('timer-label').textContent='Ready';
   updateTimerUI();
 }
 
 function resetTimerState() {
-  clearInterval(T.interval); T.duration = 90; T.remaining = 90; T.running = false;
-  document.getElementById('timer-toggle').innerHTML = '&#9654; Start';
-  document.getElementById('timer-status').textContent = 'Ready';
+  clearInterval(T.interval); T.duration=90; T.remaining=90; T.running=false;
+  document.getElementById('timer-toggle').innerHTML='&#9654; Start';
+  document.getElementById('timer-label').textContent='Ready';
   updateTimerUI();
 }
 
 function updateTimerUI() {
-  document.getElementById('timer-display').textContent = Math.floor(T.remaining/60)+':'+pad(T.remaining%60);
-  document.getElementById('progress-fill').style.width = (T.duration>0?(T.remaining/T.duration)*100:0)+'%';
+  document.getElementById('timer-display').textContent=Math.floor(T.remaining/60)+':'+pad(T.remaining%60);
+  document.getElementById('progress-fill').style.width=(T.duration>0?(T.remaining/T.duration)*100:0)+'%';
 }
 
 // ── History ──
 async function loadHistory() {
-  document.getElementById('history-list').innerHTML = '<div class="empty">Loading...</div>';
-  await loadWorkoutsFromGitHub();
+  document.getElementById('history-list').innerHTML='<div class="empty">Loading...</div>';
+  await loadFromGH();
   renderHistory();
 }
 
 function renderHistory() {
-  const list = document.getElementById('history-list');
-  if (!history.length) { list.innerHTML = '<div class="empty">No workouts saved yet</div>'; return; }
-  list.innerHTML = history.map((w,i) => {
-    const date = new Date(w.startTime);
-    const dur = w.endTime ? Math.round((w.endTime-w.startTime)/60000) : '?';
-    const totalSets = Object.values(w.sets||{}).reduce((a,b)=>a+b.length,0);
-    const detail = (w.exercises||[]).map(ex => {
-      const sets = (w.sets||{})[ex]||[];
-      if (!sets.length) return '';
-      return `<div class="history-ex">
-        <div class="history-ex-name">${esc(ex)}</div>
-        ${sets.map((s,si)=>`<div class="history-set">Set ${si+1}: ${s.reps} reps${s.weight>0?' &times; '+s.weight+'kg':''}${s.notes?' — '+esc(s.notes):''}</div>`).join('')}
-      </div>`;
+  const list=document.getElementById('history-list');
+  if (!history.length) { list.innerHTML='<div class="empty">No workouts saved yet</div>'; return; }
+  list.innerHTML=history.map((w,i)=>{
+    const date=new Date(w.startTime);
+    const dur=w.endTime?Math.round((w.endTime-w.startTime)/60000):'?';
+    const sets=Object.values(w.sets||{}).reduce((a,b)=>a+b.length,0);
+    const detail=(w.exercises||[]).map(ex=>{
+      const s=(w.sets||{})[ex]||[];
+      return s.length?`<div class="hist-ex">
+        <div class="hist-ex-name">${esc(ex)}</div>
+        ${s.map((s,si)=>`<div class="hist-set">Set ${si+1}: ${s.reps} reps${s.weight>0?' × '+s.weight+'kg':''}${s.notes?' — '+esc(s.notes):''}</div>`).join('')}
+      </div>`:'';
     }).join('');
-    return `<div class="history-session">
-      <div class="history-header" onclick="toggleHistBody(${i})">
-        <div>
-          <div class="history-name">${esc(w.name)}</div>
-          <div class="history-meta">${date.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} &nbsp;&#183;&nbsp; ${date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} &nbsp;&#183;&nbsp; ${dur} min &nbsp;&#183;&nbsp; ${totalSets} sets</div>
+    return `<div class="hist-card">
+      <div class="hist-hdr" onclick="toggleHist(${i})">
+        <div style="flex:1">
+          <div class="hist-name">${esc(w.name)}</div>
+          <div class="hist-meta">${date.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} · ${date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${dur} min · ${sets} sets</div>
         </div>
-        <button class="btn-danger" style="font-size:12px;padding:4px 10px" onclick="event.stopPropagation();deleteSessionAt(${i})">Delete</button>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteAt(${i})">Delete</button>
       </div>
-      <div id="hb-${i}" class="history-body" style="display:none">${detail||'<div style="font-size:13px;color:var(--text2)">No sets logged</div>'}</div>
+      <div id="hb-${i}" class="hist-body" style="display:none">${detail||'<div style="font-size:14px;color:var(--text2)">No sets logged</div>'}</div>
     </div>`;
   }).join('');
 }
 
-function toggleHistBody(i) {
-  const b = document.getElementById('hb-'+i);
-  b.style.display = b.style.display==='none' ? '' : 'none';
+function toggleHist(i) {
+  const b=document.getElementById('hb-'+i);
+  b.style.display=b.style.display==='none'?'':'none';
 }
 
-async function deleteSessionAt(i) {
+async function deleteAt(i) {
   if (!confirm('Delete this workout?')) return;
-  history.splice(i, 1);
-  await saveWorkoutsToGitHub();
+  history.splice(i,1);
+  await saveToGH();
   renderHistory();
 }
 
-async function clearAllHistory() {
-  if (!confirm('Delete all workout history from GitHub?')) return;
-  history = [];
-  await saveWorkoutsToGitHub();
-  renderHistory();
+async function clearAll() {
+  if (!confirm('Delete all workouts from GitHub?')) return;
+  history=[]; await saveToGH(); renderHistory();
 }
 
 // ── Utils ──
-function pad(n) { return String(n).padStart(2,'0'); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pad(n){return String(n).padStart(2,'0');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ── Init ──
 loadCfg();
-if (cfg && cfg.token && cfg.owner && cfg.repo) {
-  document.getElementById('setup-overlay').style.display = 'none';
-  document.getElementById('setup-token').value = cfg.token;
-  document.getElementById('setup-owner').value = cfg.owner;
-  document.getElementById('setup-repo').value  = cfg.repo;
-  loadWorkoutsFromGitHub();
+if (cfg?.token && cfg?.owner && cfg?.repo) {
+  document.getElementById('setup-overlay').classList.add('hidden');
+  loadFromGH();
 }
 updateTimerUI();
 </script>
