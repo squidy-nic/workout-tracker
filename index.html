@@ -354,10 +354,58 @@
   <div id="history-list"><div class="empty">No workouts yet</div></div>
 </div>
 
+<!-- ══ PROGRESS PAGE ══ -->
+<div class="page" id="page-progress">
+  <div style="font-size:18px;font-weight:700;margin-bottom:12px">Progress</div>
+
+  <!-- All-time summary -->
+  <div class="card">
+    <div class="card-title">All time</div>
+    <div class="stats-grid" id="progress-summary">
+      <div class="stat-box"><div class="stat-val" id="pg-workouts">0</div><div class="stat-lbl">workouts</div></div>
+      <div class="stat-box"><div class="stat-val" id="pg-sets">0</div><div class="stat-lbl">total sets</div></div>
+      <div class="stat-box"><div class="stat-val" id="pg-reps">0</div><div class="stat-lbl">total reps</div></div>
+      <div class="stat-box"><div class="stat-val" id="pg-exercises">0</div><div class="stat-lbl">exercises</div></div>
+    </div>
+  </div>
+
+  <!-- Volume over time -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="card-title" style="margin:0">Workout volume</div>
+      <span style="font-size:12px;color:var(--text2)">kg × reps</span>
+    </div>
+    <div style="position:relative;height:180px"><canvas id="volume-chart"></canvas></div>
+  </div>
+
+  <!-- Exercise progress -->
+  <div class="card">
+    <div class="card-title">Exercise progress</div>
+    <div class="form-row" style="margin-bottom:12px">
+      <label>Select exercise</label>
+      <select id="ex-select" onchange="renderExerciseChart()" style="font-size:15px;min-height:44px">
+        <option value="">— choose an exercise —</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px" id="ex-chart-toggles">
+      <button class="btn btn-sm btn-primary" id="toggle-weight" onclick="setExMetric('weight',this)">Max weight</button>
+      <button class="btn btn-sm" id="toggle-volume" onclick="setExMetric('volume',this)">Volume</button>
+    </div>
+    <div style="position:relative;height:200px"><canvas id="exercise-chart"></canvas></div>
+    <div id="ex-chart-empty" class="empty" style="display:none;padding:20px 0">No data for this exercise yet</div>
+    <!-- PR badge -->
+    <div id="pr-badge" style="display:none;margin-top:12px;padding:12px;background:var(--amber-bg);border-radius:var(--radius);text-align:center">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber-text);margin-bottom:2px">Personal Record</div>
+      <div style="font-size:22px;font-weight:700;color:var(--amber-text)" id="pr-value"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Bottom nav -->
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showPage('workout',this)"><span class="nav-icon">&#127947;</span><span>Workout</span></button>
   <button class="nav-btn" onclick="showPage('plans',this)"><span class="nav-icon">&#128203;</span><span>Plans</span></button>
+  <button class="nav-btn" onclick="showPage('progress',this)"><span class="nav-icon">&#128200;</span><span>Progress</span></button>
   <button class="nav-btn" onclick="showPage('history',this)"><span class="nav-icon">&#128196;</span><span>History</span></button>
 </nav>
 
@@ -948,6 +996,203 @@ if(cfg?.token&&cfg?.owner&&cfg?.repo){
   loadFromGH().then(()=>{renderPlans();renderHistory();});
 }
 updateTimerUI();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── Progress charts ──
+let volumeChart = null, exerciseChart = null, exMetric = 'weight';
+
+function showPage_orig(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='history') renderHistory();
+  if(name==='plans') renderPlans();
+  if(name==='progress') renderProgress();
+}
+
+// Patch showPage to handle progress
+const _showPage = window.showPage;
+window.showPage = function(name, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='history') renderHistory();
+  if(name==='plans') renderPlans();
+  if(name==='progress') renderProgress();
+};
+
+function chartColors() {
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    text: dark ? '#a0a09b' : '#6b6b68',
+    grid: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
+    blue: dark ? '#85b7eb' : '#185fa5',
+    blueFill: dark ? 'rgba(133,183,235,0.15)' : 'rgba(24,95,165,0.1)',
+    green: dark ? '#97c459' : '#3b6d11',
+    greenFill: dark ? 'rgba(151,196,89,0.15)' : 'rgba(59,109,17,0.1)',
+    bar: dark ? '#85b7eb' : '#378add',
+  };
+}
+
+function baseChartOpts(colors) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+    scales: {
+      x: { ticks: { color: colors.text, font: { size: 11 }, maxRotation: 0 }, grid: { color: colors.grid } },
+      y: { ticks: { color: colors.text, font: { size: 11 } }, grid: { color: colors.grid }, beginAtZero: false }
+    }
+  };
+}
+
+function renderProgress() {
+  renderProgressSummary();
+  renderVolumeChart();
+  populateExerciseSelect();
+  renderExerciseChart();
+}
+
+function renderProgressSummary() {
+  let totalSets = 0, totalReps = 0, exSet = new Set();
+  workouts.forEach(w => {
+    Object.entries(w.sets || {}).forEach(([ex, sets]) => {
+      exSet.add(ex);
+      sets.forEach(s => { totalSets++; totalReps += s.reps; });
+    });
+  });
+  document.getElementById('pg-workouts').textContent = workouts.length;
+  document.getElementById('pg-sets').textContent = totalSets > 999 ? (totalSets/1000).toFixed(1)+'k' : totalSets;
+  document.getElementById('pg-reps').textContent = totalReps > 999 ? (totalReps/1000).toFixed(1)+'k' : totalReps;
+  document.getElementById('pg-exercises').textContent = exSet.size;
+}
+
+function renderVolumeChart() {
+  const recent = workouts.slice(0, 20).reverse();
+  const labels = recent.map(w => {
+    const d = new Date(w.startTime);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  });
+  const data = recent.map(w => {
+    let vol = 0;
+    Object.values(w.sets || {}).forEach(sets => sets.forEach(s => vol += (s.weight || 0) * s.reps));
+    return Math.round(vol);
+  });
+
+  const colors = chartColors();
+  const ctx = document.getElementById('volume-chart').getContext('2d');
+  if (volumeChart) volumeChart.destroy();
+  const opts = baseChartOpts(colors);
+  opts.scales.y.beginAtZero = true;
+  opts.plugins.tooltip.callbacks.label = ctx => ctx.parsed.y.toLocaleString() + ' kg';
+  volumeChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors.bar,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: opts
+  });
+}
+
+function populateExerciseSelect() {
+  const sel = document.getElementById('ex-select');
+  const current = sel.value;
+  const exSet = new Set();
+  workouts.forEach(w => Object.keys(w.sets || {}).forEach(ex => exSet.add(ex)));
+  const exercises = [...exSet].sort();
+  sel.innerHTML = '<option value="">— choose an exercise —</option>' +
+    exercises.map(ex => `<option value="${esc(ex)}"${ex===current?' selected':''}>${esc(ex)}</option>`).join('');
+}
+
+function setExMetric(metric, btn) {
+  exMetric = metric;
+  document.getElementById('toggle-weight').className = 'btn btn-sm' + (metric==='weight' ? ' btn-primary' : '');
+  document.getElementById('toggle-volume').className = 'btn btn-sm' + (metric==='volume' ? ' btn-primary' : '');
+  renderExerciseChart();
+}
+
+function renderExerciseChart() {
+  const ex = document.getElementById('ex-select').value;
+  const canvas = document.getElementById('exercise-chart');
+  const emptyEl = document.getElementById('ex-chart-empty');
+  const prBadge = document.getElementById('pr-badge');
+
+  if (exerciseChart) { exerciseChart.destroy(); exerciseChart = null; }
+
+  if (!ex) { canvas.style.display='none'; emptyEl.style.display='none'; prBadge.style.display='none'; return; }
+
+  // Collect sessions that include this exercise, oldest first
+  const sessions = workouts
+    .filter(w => (w.sets||{})[ex]?.length)
+    .slice(0, 30)
+    .reverse();
+
+  if (!sessions.length) {
+    canvas.style.display='none'; emptyEl.style.display=''; prBadge.style.display='none'; return;
+  }
+
+  canvas.style.display=''; emptyEl.style.display='none';
+
+  const labels = sessions.map(w => {
+    const d = new Date(w.startTime);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  });
+
+  let data, yLabel, pr, prText;
+  if (exMetric === 'weight') {
+    data = sessions.map(w => Math.max(...(w.sets[ex] || []).map(s => s.weight || 0)));
+    yLabel = 'kg';
+    pr = Math.max(...data);
+    prText = pr + ' kg';
+  } else {
+    data = sessions.map(w => Math.round((w.sets[ex] || []).reduce((a,s) => a + (s.weight||0)*s.reps, 0)));
+    yLabel = 'kg vol';
+    pr = Math.max(...data);
+    prText = pr.toLocaleString() + ' kg vol';
+  }
+
+  const colors = chartColors();
+  const opts = baseChartOpts(colors);
+  opts.plugins.tooltip.callbacks.label = ctx => ctx.parsed.y + ' ' + yLabel;
+  opts.scales.y.ticks.callback = v => v + (exMetric==='weight'?' kg':'');
+
+  exerciseChart = new Chart(document.getElementById('exercise-chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: colors.green,
+        backgroundColor: colors.greenFill,
+        borderWidth: 2,
+        pointBackgroundColor: colors.green,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.3,
+      }]
+    },
+    options: opts
+  });
+
+  // PR badge
+  if (pr > 0) {
+    prBadge.style.display = '';
+    document.getElementById('pr-value').textContent = prText;
+  } else {
+    prBadge.style.display = 'none';
+  }
+}
 </script>
 </body>
 </html>
