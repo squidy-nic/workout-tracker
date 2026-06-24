@@ -2,6 +2,53 @@
   "workouts": [
     {
       "name": "Push",
+      "startTime": 1782318594859,
+      "exercises": [
+        "Push ups",
+        "Bench Dips",
+        "Wall HandStands",
+        "Pike Push ups"
+      ],
+      "sets": {
+        "Push ups": [],
+        "Bench Dips": [],
+        "Wall HandStands": [],
+        "Pike Push ups": [
+          {
+            "weight": 60,
+            "reps": 8,
+            "notes": "",
+            "time": "12:30 am"
+          }
+        ]
+      },
+      "planRef": "Push",
+      "targets": {
+        "Push ups": {
+          "sets": 3,
+          "reps": 20,
+          "weight": 60
+        },
+        "Bench Dips": {
+          "sets": 3,
+          "reps": 20,
+          "weight": 60
+        },
+        "Wall HandStands": {
+          "sets": 3,
+          "reps": 10,
+          "weight": 60
+        },
+        "Pike Push ups": {
+          "sets": 3,
+          "reps": 8,
+          "weight": 60
+        }
+      },
+      "endTime": 1782318614086
+    },
+    {
+      "name": "Push",
       "startTime": 1782318022987,
       "exercises": [
         "Push ups",
