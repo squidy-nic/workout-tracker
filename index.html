@@ -298,6 +298,23 @@
     <div class="ex-list" id="ex-list"><div class="empty" style="padding:16px 0">Add your first exercise</div></div>
   </div>
 
+  <div class="card" id="timer-card" style="display:none">
+    <div class="timer-label" id="timer-label">Ready</div>
+    <div class="timer-display" id="timer-display">1:30</div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
+    <div class="preset-row">
+      <button class="btn preset-btn" onclick="setPreset(45,this)">45s</button>
+      <button class="btn preset-btn on" onclick="setPreset(90,this)">1:30</button>
+      <button class="btn preset-btn" onclick="setPreset(120,this)">2 min</button>
+      <button class="btn preset-btn" onclick="setPreset(180,this)">3 min</button>
+      <button class="btn preset-btn" onclick="setPreset(300,this)">5 min</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="timer-toggle" onclick="toggleTimer()">&#9654; Start</button>
+      <button class="btn" onclick="resetTimer()" style="flex:0;width:auto;padding:0 20px">&#8635;</button>
+    </div>
+  </div>
+
   <div class="card" id="log-card" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="card-title" id="log-card-title" style="margin:0">Log set</div>
@@ -325,26 +342,6 @@
   <div id="plans-list"><div class="empty">No plans yet. Create one to get started.</div></div>
 </div>
 
-<!-- ══ TIMER PAGE ══ -->
-<div class="page" id="page-timer">
-  <div class="card">
-    <div class="timer-label" id="timer-label">Ready</div>
-    <div class="timer-display" id="timer-display">1:30</div>
-    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:100%"></div></div>
-    <div class="preset-row">
-      <button class="btn preset-btn" onclick="setPreset(45,this)">45s</button>
-      <button class="btn preset-btn on" onclick="setPreset(90,this)">1:30</button>
-      <button class="btn preset-btn" onclick="setPreset(120,this)">2 min</button>
-      <button class="btn preset-btn" onclick="setPreset(180,this)">3 min</button>
-      <button class="btn preset-btn" onclick="setPreset(300,this)">5 min</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="timer-toggle" onclick="toggleTimer()">&#9654; Start</button>
-      <button class="btn" onclick="resetTimer()" style="flex:0;width:auto;padding:0 20px">&#8635;</button>
-    </div>
-  </div>
-</div>
-
 <!-- ══ HISTORY PAGE ══ -->
 <div class="page" id="page-history">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -361,7 +358,6 @@
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showPage('workout',this)"><span class="nav-icon">&#127947;</span><span>Workout</span></button>
   <button class="nav-btn" onclick="showPage('plans',this)"><span class="nav-icon">&#128203;</span><span>Plans</span></button>
-  <button class="nav-btn" onclick="showPage('timer',this)"><span class="nav-icon">&#9202;</span><span>Timer</span></button>
   <button class="nav-btn" onclick="showPage('history',this)"><span class="nav-icon">&#128196;</span><span>History</span></button>
 </nav>
 
@@ -648,6 +644,7 @@ function launchFromPlan(){
   document.getElementById('start-ui').style.display='none';
   document.getElementById('active-ui').style.display='';
   document.getElementById('ex-card').style.display='';
+  document.getElementById('timer-card').style.display='';
   document.getElementById('active-name').textContent=name;
   document.getElementById('session-pill').textContent=name;
   document.getElementById('session-pill').className='pill';
@@ -677,6 +674,7 @@ function startSession(){
   document.getElementById('start-ui').style.display='none';
   document.getElementById('active-ui').style.display='';
   document.getElementById('ex-card').style.display='';
+  document.getElementById('timer-card').style.display='';
   document.getElementById('log-card').style.display='none';
   document.getElementById('active-name').textContent=name;
   document.getElementById('session-pill').textContent=name;
@@ -697,6 +695,7 @@ async function finishSession(){
   document.getElementById('start-ui').style.display='';
   document.getElementById('active-ui').style.display='none';
   document.getElementById('ex-card').style.display='none';
+  document.getElementById('timer-card').style.display='none';
   document.getElementById('log-card').style.display='none';
   document.getElementById('session-pill').textContent='No session';
   document.getElementById('session-pill').className='pill off';
