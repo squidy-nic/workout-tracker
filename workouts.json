@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "name": "Push",
+    "startTime": 1782315712780,
+    "exercises": [
+      "Push Up"
+    ],
+    "sets": {
+      "Push Up": [
+        {
+          "weight": 60,
+          "reps": 10,
+          "notes": "",
+          "time": "11:42 pm"
+        },
+        {
+          "weight": 60,
+          "reps": 10,
+          "notes": "",
+          "time": "11:42 pm"
+        }
+      ]
+    },
+    "endTime": 1782315751092
+  }
+]
