@@ -18,7 +18,7 @@
     --bg:#f5f5f3; --surface:#fff; --surface2:#f1efe8;
     --border:rgba(0,0,0,0.1); --border2:rgba(0,0,0,0.2);
     --text:#1a1a1a; --text2:#6b6b68; --text3:#b0b0aa;
-    --blue:#185fa5; --blue-bg:#e6f1fb; --blue-text:#0c447c;
+    --blue:#6b21d6; --blue-bg:#f0e8fd; --blue-text:#4a1599;
     --green:#3b6d11; --green-bg:#eaf3de; --green-text:#27500a;
     --red:#a32d2d; --red-bg:#fcebeb; --red-text:#791f1f;
     --amber-bg:#faeeda; --amber-text:#854f0b;
@@ -32,7 +32,7 @@
       --bg:#1c1c1a; --surface:#252523; --surface2:#2e2e2b;
       --border:rgba(255,255,255,0.1); --border2:rgba(255,255,255,0.18);
       --text:#f0ede6; --text2:#a0a09b; --text3:#5a5a56;
-      --blue:#85b7eb; --blue-bg:#042c53; --blue-text:#b5d4f4;
+      --blue:#c084fc; --blue-bg:#2d1254; --blue-text:#e4b8ff;
       --green:#97c459; --green-bg:#173404; --green-text:#c0dd97;
       --red:#f09595; --red-bg:#501313; --red-text:#f7c1c1;
       --amber-bg:#412402; --amber-text:#fac775;
@@ -509,7 +509,6 @@ async function loadFromGH(){
   try{
     const r=await ghFetch(`/repos/${cfg.owner}/${cfg.repo}/contents/data.json`);
     if(r.status===404){
-      // Try old workouts.json format
       const r2=await ghFetch(`/repos/${cfg.owner}/${cfg.repo}/contents/workouts.json`);
       if(r2.status===404){workouts=[];plans=[];fileSha=null;}
       else{
@@ -517,7 +516,7 @@ async function loadFromGH(){
         const raw=JSON.parse(atob(d.content.replace(/\n/g,'')));
         workouts=Array.isArray(raw)?raw:(raw.workouts||[]);
         plans=Array.isArray(raw)?[]:(raw.plans||[]);
-        fileSha=null; // will create new data.json
+        fileSha=null;
       }
       setSyncStatus('green',cfg.owner+'/'+cfg.repo); return true;
     }
