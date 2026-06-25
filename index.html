@@ -284,8 +284,49 @@
   </div>
 </header>
 
+<!-- ══ HOME PAGE ══ -->
+<div class="page active" id="page-home">
+
+  <!-- Greeting -->
+  <div style="margin-bottom:16px">
+    <div style="font-size:22px;font-weight:700" id="home-greeting">Good morning</div>
+    <div style="font-size:14px;color:var(--text2)" id="home-date"></div>
+  </div>
+
+  <!-- Active session banner -->
+  <div id="home-active-banner" style="display:none;background:var(--green-bg);border:0.5px solid var(--green);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px;display:none">
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--green-text);margin-bottom:4px">Session in progress</div>
+    <div style="font-size:16px;font-weight:700;color:var(--green-text);margin-bottom:10px" id="home-active-name"></div>
+    <button class="btn btn-success" onclick="showPage('workout',document.querySelectorAll('.nav-btn')[1])" style="min-height:44px">Resume workout →</button>
+  </div>
+
+  <!-- This week stats -->
+  <div class="card">
+    <div class="card-title">This week</div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-box"><div class="stat-val" id="hw-workouts">0</div><div class="stat-lbl">workouts</div></div>
+      <div class="stat-box"><div class="stat-val" id="hw-sets">0</div><div class="stat-lbl">sets</div></div>
+      <div class="stat-box"><div class="stat-val" id="hw-streak">0</div><div class="stat-lbl">day streak</div></div>
+    </div>
+  </div>
+
+  <!-- Quick start -->
+  <div class="card">
+    <div class="card-title">Quick start</div>
+    <button class="btn btn-primary" style="margin-bottom:10px" onclick="showPage('workout',document.querySelectorAll('.nav-btn')[1])">&#9654; Start blank workout</button>
+    <div id="home-plans-quick"></div>
+  </div>
+
+  <!-- Last workout -->
+  <div class="card" id="home-last-card" style="display:none">
+    <div class="card-title">Last workout</div>
+    <div id="home-last-workout"></div>
+  </div>
+
+</div>
+
 <!-- ══ WORKOUT PAGE ══ -->
-<div class="page active" id="page-workout">
+<div class="page" id="page-workout">
   <div class="card">
     <div id="start-ui">
       <div class="form-row">
@@ -431,7 +472,8 @@
 
 <!-- Bottom nav -->
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showPage('workout',this)"><span class="nav-icon">&#127947;</span><span>Workout</span></button>
+  <button class="nav-btn active" onclick="showPage('home',this)"><span class="nav-icon">&#127968;</span><span>Home</span></button>
+  <button class="nav-btn" onclick="showPage('workout',this)"><span class="nav-icon">&#127947;</span><span>Workout</span></button>
   <button class="nav-btn" onclick="showPage('plans',this)"><span class="nav-icon">&#128203;</span><span>Plans</span></button>
   <button class="nav-btn" onclick="showPage('progress',this)"><span class="nav-icon">&#128200;</span><span>Progress</span></button>
   <button class="nav-btn" onclick="showPage('history',this)"><span class="nav-icon">&#128196;</span><span>History</span></button>
@@ -713,7 +755,7 @@ function launchFromPlan(){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-workout').classList.add('active');
-  document.querySelector('.nav-btn').classList.add('active');
+  document.querySelectorAll('.nav-btn')[1].classList.add('active');
   // Start session
   S.session={name,startTime:Date.now(),exercises:[],sets:{},planRef:plan.name};
   S.activeEx=null;
@@ -1021,7 +1063,9 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 loadCfg();
 if(cfg?.token&&cfg?.owner&&cfg?.repo){
   document.getElementById('setup-overlay').classList.add('hidden');
-  loadFromGH().then(()=>{renderPlans();renderHistory();});
+  loadFromGH().then(()=>{ renderHome(); renderPlans(); renderHistory(); });
+} else {
+  renderHome();
 }
 updateTimerUI();
 </script>
@@ -1041,7 +1085,7 @@ function showPage_orig(name, btn) {
   if(name==='progress') renderProgress();
 }
 
-// Patch showPage to handle progress
+// Patch showPage to handle all pages
 const _showPage = window.showPage;
 window.showPage = function(name, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1051,7 +1095,98 @@ window.showPage = function(name, btn) {
   if(name==='history') renderHistory();
   if(name==='plans') renderPlans();
   if(name==='progress') renderProgress();
+  if(name==='home') renderHome();
 };
+
+function renderHome() {
+  // Greeting
+  const h = new Date().getHours();
+  const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('home-greeting').textContent = greeting;
+  document.getElementById('home-date').textContent = new Date().toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' });
+
+  // Active session banner
+  const banner = document.getElementById('home-active-banner');
+  if (S.session) {
+    banner.style.display = '';
+    document.getElementById('home-active-name').textContent = S.session.name;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // This week stats
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setHours(0,0,0,0);
+  weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday
+  let wWorkouts = 0, wSets = 0;
+  const daysSeen = new Set();
+  workouts.forEach(w => {
+    const d = new Date(w.startTime);
+    if (d >= weekStart) {
+      wWorkouts++;
+      Object.values(w.sets||{}).forEach(s => wSets += s.length);
+    }
+    // streak: count unique days worked out going back from today
+    const dayKey = d.toDateString();
+    daysSeen.add(dayKey);
+  });
+
+  // Streak: consecutive days ending today/yesterday
+  let streak = 0;
+  const check = new Date(); check.setHours(0,0,0,0);
+  // allow today or yesterday as start
+  if (!daysSeen.has(check.toDateString())) check.setDate(check.getDate()-1);
+  while (daysSeen.has(check.toDateString())) {
+    streak++;
+    check.setDate(check.getDate()-1);
+  }
+
+  document.getElementById('hw-workouts').textContent = wWorkouts;
+  document.getElementById('hw-sets').textContent = wSets;
+  document.getElementById('hw-streak').textContent = streak;
+
+  // Quick-start plans
+  const plansEl = document.getElementById('home-plans-quick');
+  if (plans.length) {
+    plansEl.innerHTML = `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text2);margin-bottom:8px">Start from plan</div>` +
+      plans.map((p,i) => `<button class="btn" style="margin-bottom:8px;justify-content:space-between" onclick="openStartPlan(${i})">
+        <span>${esc(p.name)}</span>
+        <span style="font-size:12px;color:var(--text2)">${p.exercises.length} exercise${p.exercises.length!==1?'s':''} ›</span>
+      </button>`).join('');
+  } else {
+    plansEl.innerHTML = `<div style="font-size:13px;color:var(--text2);margin-top:4px">No plans yet — <span style="color:var(--blue);cursor:pointer" onclick="showPage('plans',document.querySelectorAll('.nav-btn')[2])">create one</span></div>`;
+  }
+
+  // Last workout
+  const lastCard = document.getElementById('home-last-card');
+  const lastEl = document.getElementById('home-last-workout');
+  if (!workouts.length) { lastCard.style.display='none'; return; }
+  lastCard.style.display='';
+  const w = workouts[0];
+  const date = new Date(w.startTime);
+  const dur = w.endTime ? Math.round((w.endTime-w.startTime)/60000) : null;
+  const totalSets = Object.values(w.sets||{}).reduce((a,b)=>a+b.length,0);
+  const exList = (w.exercises||[]).map(ex => {
+    const sets = (w.sets||{})[ex]||[];
+    const maxW = sets.length ? Math.max(...sets.map(s=>s.weight||0)) : 0;
+    const totalReps = sets.reduce((a,s)=>a+s.reps,0);
+    return `<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border)">
+      <span style="font-weight:600;font-size:14px">${esc(ex)}</span>
+      <span style="font-size:13px;color:var(--text2)">${sets.length} sets · ${totalReps} reps${maxW?' · '+maxW+'kg max':''}</span>
+    </div>`;
+  }).join('');
+  lastEl.innerHTML = `
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:16px;font-weight:700">${esc(w.name)}</div>
+      <div style="font-size:12px;color:var(--text2)">${date.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</div>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:12px">
+      ${dur!=null?`<span style="font-size:13px;color:var(--text2)">&#9201; ${dur} min</span>`:''}
+      <span style="font-size:13px;color:var(--text2)">&#9989; ${totalSets} sets</span>
+      <span style="font-size:13px;color:var(--text2)">&#128170; ${(w.exercises||[]).length} exercises</span>
+    </div>
+    ${exList}`;
+}
 
 function chartColors() {
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
