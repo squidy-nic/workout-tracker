@@ -1,5 +1,53 @@
 {
-  "workouts": [],
+  "workouts": [
+    {
+      "name": "Pull",
+      "startTime": 1782395616782,
+      "exercises": [
+        "Pull Up Negatives",
+        "Chin Up Negatives",
+        "Scapular Shrugs",
+        "Dead Hangs"
+      ],
+      "sets": {
+        "Pull Up Negatives": [
+          {
+            "weight": 60,
+            "reps": 8,
+            "notes": "",
+            "time": "09:55 pm"
+          }
+        ],
+        "Chin Up Negatives": [],
+        "Scapular Shrugs": [],
+        "Dead Hangs": []
+      },
+      "planRef": "Pull",
+      "targets": {
+        "Pull Up Negatives": {
+          "sets": 3,
+          "reps": 8,
+          "weight": 60
+        },
+        "Chin Up Negatives": {
+          "sets": null,
+          "reps": null,
+          "weight": null
+        },
+        "Scapular Shrugs": {
+          "sets": null,
+          "reps": null,
+          "weight": null
+        },
+        "Dead Hangs": {
+          "sets": 3,
+          "reps": 20,
+          "weight": 60
+        }
+      },
+      "endTime": 1782395997006
+    }
+  ],
   "plans": [
     {
       "name": "Push",
