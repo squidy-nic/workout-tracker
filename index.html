@@ -213,8 +213,6 @@
     <div class="form-row"><label>GitHub token</label><input type="password" id="cfg-token" autocomplete="off" /></div>
     <div class="form-row"><label>Owner</label><input type="text" id="cfg-owner" autocapitalize="none" /></div>
     <div class="form-row"><label>Repository</label><input type="text" id="cfg-repo" autocapitalize="none" /></div>
-    <div class="divider"></div>
-    <div class="form-row"><label>Anthropic API Key <span style="font-weight:400;color:var(--text3)">(for calorie photo analysis)</span></label><input type="password" id="cfg-anthropic-key" placeholder="sk-ant-..." autocomplete="off" /></div>
     <button class="btn btn-primary" style="margin-top:4px" onclick="saveSettings()">Save changes</button>
     <div style="height:8px"></div>
     <button class="btn" onclick="closeSettings()">Cancel</button>
@@ -496,58 +494,90 @@
   </div>
 
   <!-- Goal setting -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
     <div style="font-size:13px;color:var(--text2);flex:1">Daily calorie goal</div>
     <input type="number" id="cal-goal-input" style="width:90px;text-align:center;min-height:36px;font-size:15px;padding:6px 10px" placeholder="2000" inputmode="numeric" onchange="saveCalGoal()" />
   </div>
 
-  <!-- Log meal button -->
-  <button class="btn btn-primary" style="margin-bottom:16px;font-size:17px;min-height:56px" onclick="document.getElementById('meal-photo-input').click()">
-    &#128247; Take photo to log meal
-  </button>
-  <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(this)" />
-
-  <!-- Analysing state -->
-  <div id="cal-analysing" style="display:none;text-align:center;padding:24px;background:var(--surface);border-radius:var(--radius-lg);border:0.5px solid var(--border);margin-bottom:12px">
-    <div style="font-size:28px;margin-bottom:8px">🤖</div>
-    <div style="font-weight:600;margin-bottom:4px">Analysing your meal…</div>
-    <div style="font-size:13px;color:var(--text2)">Claude is estimating the calories</div>
+  <!-- Add food buttons -->
+  <div class="btn-row" style="margin-bottom:14px">
+    <button class="btn btn-primary" style="min-height:52px" onclick="openFoodSearch()">&#128269; Search food</button>
+    <button class="btn btn-primary" style="min-height:52px" onclick="openBarcodeScanner()">&#128248; Scan barcode</button>
   </div>
+
+  <!-- Searching state -->
+  <div id="cal-searching" style="display:none;text-align:center;padding:20px;color:var(--text2);font-size:14px">Searching…</div>
 
   <!-- Today's meals -->
   <div class="section-label">Today's meals</div>
   <div id="cal-meal-list"></div>
 
-  <!-- API key missing notice -->
-  <div id="cal-no-key" style="display:none;background:var(--amber-bg);border-radius:var(--radius);padding:14px;margin-bottom:12px">
-    <div style="font-weight:600;color:var(--amber-text);margin-bottom:6px">Anthropic API key required</div>
-    <div style="font-size:13px;color:var(--amber-text);margin-bottom:10px">The photo analysis uses Claude AI. Add your API key in Settings (⚙️ top right).</div>
-  </div>
-
 </div>
 
-<!-- Meal preview overlay -->
-<div class="overlay hidden" id="meal-preview-overlay">
+<!-- Food search overlay -->
+<div class="overlay hidden" id="food-search-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h2>Meal Analysis</h2>
-    <img id="meal-preview-img" style="width:100%;border-radius:var(--radius);margin-bottom:14px;max-height:240px;object-fit:cover" />
-    <div id="meal-preview-result" style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">
-      <div style="font-size:28px;font-weight:700;margin-bottom:4px"><span id="mp-calories">—</span> <span style="font-size:16px;font-weight:400;color:var(--text2)">kcal</span></div>
-      <div style="font-size:14px;color:var(--text2);margin-bottom:10px" id="mp-description">—</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div class="stat-box"><div class="stat-val" style="font-size:18px" id="mp-protein">—</div><div class="stat-lbl">protein</div></div>
-        <div class="stat-box"><div class="stat-val" style="font-size:18px" id="mp-carbs">—</div><div class="stat-lbl">carbs</div></div>
-        <div class="stat-box"><div class="stat-val" style="font-size:18px" id="mp-fat">—</div><div class="stat-lbl">fat</div></div>
+    <h2>Search Food</h2>
+    <div class="add-row" style="margin-bottom:6px">
+      <input type="text" id="food-search-input" placeholder="e.g. banana, chicken breast…" autocapitalize="none" onkeydown="if(event.key==='Enter')searchFood()" />
+      <button class="btn" onclick="searchFood()" style="width:auto;padding:0 18px">&#128269;</button>
+    </div>
+    <div id="food-search-status" style="font-size:13px;color:var(--text2);margin-bottom:8px;min-height:20px"></div>
+    <div id="food-search-results" style="max-height:340px;overflow-y:auto"></div>
+    <div class="divider"></div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Or enter manually</div>
+    <div class="grid2" style="margin-bottom:8px">
+      <div class="form-row" style="margin:0"><label>Food name</label><input type="text" id="manual-food-name" placeholder="e.g. Oats" /></div>
+      <div class="form-row" style="margin:0"><label>Calories (kcal)</label><input type="number" id="manual-food-cal" placeholder="350" inputmode="numeric" /></div>
+    </div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div class="form-row" style="margin:0"><label>Protein (g)</label><input type="number" id="manual-food-protein" placeholder="0" inputmode="decimal" /></div>
+      <div class="form-row" style="margin:0"><label>Carbs (g)</label><input type="number" id="manual-food-carbs" placeholder="0" inputmode="decimal" /></div>
+    </div>
+    <button class="btn btn-success" onclick="addManualMeal()" style="margin-bottom:8px">&#10003; Add manually</button>
+    <button class="btn" onclick="closeFoodSearch()">Cancel</button>
+  </div>
+</div>
+
+<!-- Food detail / serving overlay -->
+<div class="overlay hidden" id="food-detail-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="fd-name" style="margin-bottom:4px;font-size:18px"></h2>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px" id="fd-brand"></div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center">
+        <div><div style="font-size:20px;font-weight:700" id="fd-cal">—</div><div style="font-size:11px;color:var(--text2)">kcal</div></div>
+        <div><div style="font-size:20px;font-weight:700" id="fd-pro">—</div><div style="font-size:11px;color:var(--text2)">protein</div></div>
+        <div><div style="font-size:20px;font-weight:700" id="fd-car">—</div><div style="font-size:11px;color:var(--text2)">carbs</div></div>
+        <div><div style="font-size:20px;font-weight:700" id="fd-fat">—</div><div style="font-size:11px;color:var(--text2)">fat</div></div>
       </div>
-      <div style="font-size:12px;color:var(--text3);margin-top:10px" id="mp-notes"></div>
+      <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:8px" id="fd-per">per 100g</div>
     </div>
     <div class="form-row">
-      <label>Adjust calories if needed</label>
-      <input type="number" id="mp-cal-edit" inputmode="numeric" style="text-align:center" />
+      <label>Serving size (g)</label>
+      <input type="number" id="fd-serving" value="100" inputmode="decimal" oninput="updateFdPreview()" />
     </div>
-    <button class="btn btn-success" onclick="confirmMeal()" style="margin-bottom:8px">&#10003; Save meal</button>
-    <button class="btn" onclick="closeMealPreview()">Cancel</button>
+    <div style="background:var(--blue-bg);border-radius:var(--radius);padding:12px;text-align:center;margin-bottom:14px">
+      <span style="font-size:22px;font-weight:700;color:var(--blue-text)" id="fd-serving-cal">—</span>
+      <span style="font-size:14px;color:var(--blue-text)"> kcal for this serving</span>
+    </div>
+    <button class="btn btn-success" onclick="confirmFoodDetail()" style="margin-bottom:8px">&#10003; Add to today</button>
+    <button class="btn" onclick="closeFoodDetail()">Back</button>
+  </div>
+</div>
+
+<!-- Barcode scanner overlay -->
+<div class="overlay hidden" id="barcode-overlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Scan Barcode</h2>
+    <p class="sub">Point your camera at a food barcode, then take a photo.</p>
+    <button class="btn btn-primary" style="margin-bottom:10px" onclick="document.getElementById('barcode-photo-input').click()">&#128247; Take photo of barcode</button>
+    <input type="file" id="barcode-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleBarcodePhoto(this)" />
+    <div id="barcode-status" style="text-align:center;font-size:14px;color:var(--text2);padding:10px 0;min-height:24px"></div>
+    <button class="btn" onclick="closeBarcodeScanner()">Cancel</button>
   </div>
 </div>
 
@@ -662,8 +692,6 @@ async function saveSettings(){
   const t=document.getElementById('cfg-token').value.trim();
   const o=document.getElementById('cfg-owner').value.trim();
   const r=document.getElementById('cfg-repo').value.trim();
-  const ak=document.getElementById('cfg-anthropic-key').value.trim();
-  if(ak)localStorage.setItem('wt_ak',ak); else localStorage.removeItem('wt_ak');
   if(!t||!o||!r)return;
   saveCfg(t,o,r);closeSettings();await loadFromGH();
 }
@@ -1142,9 +1170,7 @@ async function clearAll(){
 
 // ── Calories ──
 const CAL_GOAL_KEY = 'wt_cal_goal';
-let pendingMeal = null; // meal being confirmed
-
-function getAnthropicKey(){ return localStorage.getItem('wt_ak')||''; }
+let fdPending = null; // food item being confirmed
 
 function calGoal(){ return parseInt(localStorage.getItem(CAL_GOAL_KEY)||'2000',10); }
 function saveCalGoal(){
@@ -1173,140 +1199,25 @@ function renderCalories(){
   const pct=Math.min(100,Math.round(totCal/goal*100));
   document.getElementById('cal-goal-bar').style.width=pct+'%';
   document.getElementById('cal-goal-bar').style.background=pct>=100?'var(--red)':'var(--blue)';
-
-  // API key notice
-  document.getElementById('cal-no-key').style.display=getAnthropicKey()?'none':'';
-
-  // Meal list
   const list=document.getElementById('cal-meal-list');
   if(!today.length){ list.innerHTML='<div class="empty" style="padding:20px 0">No meals logged today</div>'; return; }
   list.innerHTML=today.slice().reverse().map(m=>{
     const t=new Date(m.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    return `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start">
-      ${m.thumb?`<img src="${m.thumb}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0" />`:'<div style="width:56px;height:56px;border-radius:8px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px">🍽️</div>'}
+    return `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:center">
+      <div style="width:44px;height:44px;border-radius:8px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px">&#127829;</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:15px;margin-bottom:2px">${esc(m.description)}</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${t}</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="font-weight:600;font-size:15px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.description)}</div>
+        <div style="font-size:12px;color:var(--text2)">${t}${m.serving?` · ${m.serving}g`:''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
           <span style="font-size:13px;font-weight:700;color:var(--blue)">${m.calories} kcal</span>
-          ${m.protein?`<span style="font-size:12px;color:var(--text2)">P ${Math.round(m.protein)}g</span>`:''}
-          ${m.carbs?`<span style="font-size:12px;color:var(--text2)">C ${Math.round(m.carbs)}g</span>`:''}
-          ${m.fat?`<span style="font-size:12px;color:var(--text2)">F ${Math.round(m.fat)}g</span>`:''}
+          ${m.protein?`<span style="font-size:12px;color:var(--text2)">P${Math.round(m.protein)}g</span>`:''}
+          ${m.carbs?`<span style="font-size:12px;color:var(--text2)">C${Math.round(m.carbs)}g</span>`:''}
+          ${m.fat?`<span style="font-size:12px;color:var(--text2)">F${Math.round(m.fat)}g</span>`:''}
         </div>
       </div>
-      <button class="btn-ghost" style="font-size:16px;color:var(--red);width:32px;min-height:32px" onclick="deleteMeal('${m.id}')">&#128465;</button>
+      <button class="btn-ghost" style="font-size:16px;color:var(--red);width:32px;min-height:32px;flex-shrink:0" onclick="deleteMeal('${m.id}')">&#128465;</button>
     </div>`;
   }).join('');
-}
-
-async function handleMealPhoto(input){
-  const file=input.files[0];
-  input.value='';
-  if(!file)return;
-  if(!getAnthropicKey()){
-    document.getElementById('cal-no-key').style.display='';
-    document.getElementById('cal-no-key').scrollIntoView({behavior:'smooth'});
-    return;
-  }
-  // Show analysing state
-  document.getElementById('cal-analysing').style.display='';
-  document.getElementById('cal-analysing').scrollIntoView({behavior:'smooth'});
-
-  // Read file as base64
-  const {base64,dataUrl,mediaType}=await readFileAsBase64(file);
-
-  try{
-    const result=await analyseWithClaude(base64,mediaType);
-    document.getElementById('cal-analysing').style.display='none';
-
-    // Store pending meal
-    pendingMeal={
-      id: Date.now().toString(),
-      timestamp: Date.now(),
-      description: result.description||'Meal',
-      calories: result.calories||0,
-      protein: result.protein_g||0,
-      carbs: result.carbs_g||0,
-      fat: result.fat_g||0,
-      notes: result.notes||'',
-      thumb: dataUrl
-    };
-
-    // Show preview
-    document.getElementById('meal-preview-img').src=dataUrl;
-    document.getElementById('mp-calories').textContent=pendingMeal.calories;
-    document.getElementById('mp-description').textContent=pendingMeal.description;
-    document.getElementById('mp-protein').textContent=Math.round(pendingMeal.protein)+'g';
-    document.getElementById('mp-carbs').textContent=Math.round(pendingMeal.carbs)+'g';
-    document.getElementById('mp-fat').textContent=Math.round(pendingMeal.fat)+'g';
-    document.getElementById('mp-notes').textContent=pendingMeal.notes;
-    document.getElementById('mp-cal-edit').value=pendingMeal.calories;
-    document.getElementById('meal-preview-overlay').classList.remove('hidden');
-  }catch(e){
-    document.getElementById('cal-analysing').style.display='none';
-    alert('Could not analyse photo: '+e.message);
-  }
-}
-
-function readFileAsBase64(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const dataUrl=e.target.result;
-      const base64=dataUrl.split(',')[1];
-      const mediaType=file.type||'image/jpeg';
-      resolve({base64,dataUrl,mediaType});
-    };
-    reader.onerror=reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function analyseWithClaude(base64,mediaType){
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'x-api-key':getAnthropicKey(),
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-calls':'true',
-      'content-type':'application/json'
-    },
-    body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:512,
-      messages:[{
-        role:'user',
-        content:[
-          {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
-          {type:'text',text:'Analyse this food image. Respond with ONLY a JSON object (no markdown, no explanation) with these fields: {"description":"brief name of the food","calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"notes":"any assumptions or estimation notes"}. Estimate realistic portions based on what is visible.'}
-        ]
-      }]
-    })
-  });
-  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'API error '+res.status);}
-  const data=await res.json();
-  const text=data.content[0].text.trim();
-  try{ return JSON.parse(text); }
-  catch{ const m=text.match(/\{[\s\S]*\}/); if(m)return JSON.parse(m[0]); throw new Error('Could not parse response'); }
-}
-
-async function confirmMeal(){
-  if(!pendingMeal)return;
-  const editedCal=parseInt(document.getElementById('mp-cal-edit').value,10);
-  if(!isNaN(editedCal))pendingMeal.calories=editedCal;
-  // Shrink thumb to save space in GitHub
-  pendingMeal.thumb=await shrinkImage(pendingMeal.thumb,120);
-  meals.push(pendingMeal);
-  pendingMeal=null;
-  closeMealPreview();
-  const ok=await saveToGH();
-  if(!ok){meals.pop();return;}
-  renderCalories();
-}
-
-function closeMealPreview(){
-  document.getElementById('meal-preview-overlay').classList.add('hidden');
-  pendingMeal=null;
 }
 
 async function deleteMeal(id){
@@ -1315,26 +1226,156 @@ async function deleteMeal(id){
   if(idx===-1)return;
   const removed=meals.splice(idx,1);
   const ok=await saveToGH();
-  if(!ok){meals.splice(idx,0,...removed);}
+  if(!ok) meals.splice(idx,0,...removed);
   renderCalories();
 }
 
-function shrinkImage(dataUrl,size){
-  return new Promise(resolve=>{
-    const img=new Image();
-    img.onload=()=>{
-      const c=document.createElement('canvas');
-      const s=Math.min(size,img.width,img.height);
-      c.width=s;c.height=s;
-      const ctx=c.getContext('2d');
-      const scale=s/Math.min(img.width,img.height);
-      const w=img.width*scale,h=img.height*scale;
-      ctx.drawImage(img,(s-w)/2,(s-h)/2,w,h);
-      resolve(c.toDataURL('image/jpeg',0.7));
-    };
-    img.onerror=()=>resolve('');
-    img.src=dataUrl;
-  });
+// ── Food search (Open Food Facts) ──
+function openFoodSearch(){
+  document.getElementById('food-search-input').value='';
+  document.getElementById('food-search-results').innerHTML='';
+  document.getElementById('food-search-status').textContent='';
+  document.getElementById('manual-food-name').value='';
+  document.getElementById('manual-food-cal').value='';
+  document.getElementById('manual-food-protein').value='';
+  document.getElementById('manual-food-carbs').value='';
+  document.getElementById('food-search-overlay').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('food-search-input').focus(),300);
+}
+function closeFoodSearch(){ document.getElementById('food-search-overlay').classList.add('hidden'); }
+
+async function searchFood(){
+  const q=document.getElementById('food-search-input').value.trim();
+  if(!q)return;
+  const status=document.getElementById('food-search-status');
+  const results=document.getElementById('food-search-results');
+  status.textContent='Searching…';
+  results.innerHTML='';
+  try{
+    const res=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=15&fields=product_name,brands,nutriments,serving_size,serving_quantity`);
+    const data=await res.json();
+    const products=(data.products||[]).filter(p=>p.product_name&&p.nutriments?.['energy-kcal_100g']!=null);
+    if(!products.length){ status.textContent='No results. Try a different name or add manually below.'; return; }
+    status.textContent=`${products.length} result${products.length!==1?'s':''}`;
+    results.innerHTML=products.map((p,i)=>{
+      const cal=Math.round(p.nutriments['energy-kcal_100g']||0);
+      const pro=Math.round(p.nutriments['proteins_100g']||0);
+      const carb=Math.round(p.nutriments['carbohydrates_100g']||0);
+      const fat=Math.round(p.nutriments['fat_100g']||0);
+      const brand=p.brands?`<span style="font-size:12px;color:var(--text3)"> · ${p.brands.split(',')[0]}</span>`:'';
+      return `<div class="ex-picker-option" onclick="openFoodDetail(${i})" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <div style="font-weight:600;font-size:14px">${esc(p.product_name)}${brand}</div>
+        <div style="font-size:12px;color:var(--text2)">${cal} kcal · P${pro}g · C${carb}g · F${fat}g <span style="color:var(--text3)">per 100g</span></div>
+      </div>`;
+    }).join('');
+    // Store results for detail view
+    window._offResults=products;
+  }catch(e){ status.textContent='Search failed. Check your connection.'; }
+}
+
+function openFoodDetail(idx){
+  const p=window._offResults[idx];
+  const n=p.nutriments;
+  fdPending={
+    per100: {
+      cal: n['energy-kcal_100g']||0,
+      pro: n['proteins_100g']||0,
+      carb: n['carbohydrates_100g']||0,
+      fat: n['fat_100g']||0,
+    },
+    name: p.product_name,
+    brand: p.brands?p.brands.split(',')[0]:'',
+    serving: p.serving_quantity||100,
+  };
+  document.getElementById('fd-name').textContent=fdPending.name;
+  document.getElementById('fd-brand').textContent=fdPending.brand;
+  document.getElementById('fd-cal').textContent=Math.round(fdPending.per100.cal);
+  document.getElementById('fd-pro').textContent=Math.round(fdPending.per100.pro)+'g';
+  document.getElementById('fd-car').textContent=Math.round(fdPending.per100.carb)+'g';
+  document.getElementById('fd-fat').textContent=Math.round(fdPending.per100.fat)+'g';
+  document.getElementById('fd-serving').value=fdPending.serving;
+  updateFdPreview();
+  document.getElementById('food-detail-overlay').classList.remove('hidden');
+}
+
+function updateFdPreview(){
+  if(!fdPending)return;
+  const g=parseFloat(document.getElementById('fd-serving').value)||100;
+  const cal=Math.round(fdPending.per100.cal*g/100);
+  document.getElementById('fd-serving-cal').textContent=cal;
+}
+
+function closeFoodDetail(){ document.getElementById('food-detail-overlay').classList.add('hidden'); }
+
+async function confirmFoodDetail(){
+  if(!fdPending)return;
+  const g=parseFloat(document.getElementById('fd-serving').value)||100;
+  const r=fdPending.per100;
+  const meal={
+    id:Date.now().toString(), timestamp:Date.now(),
+    description:fdPending.name+(fdPending.brand?' ('+fdPending.brand+')':''),
+    calories:Math.round(r.cal*g/100),
+    protein:Math.round(r.pro*g/100*10)/10,
+    carbs:Math.round(r.carb*g/100*10)/10,
+    fat:Math.round(r.fat*g/100*10)/10,
+    serving:Math.round(g),
+  };
+  meals.push(meal);
+  closeFoodDetail(); closeFoodSearch();
+  const ok=await saveToGH();
+  if(!ok) meals.pop();
+  renderCalories();
+}
+
+async function addManualMeal(){
+  const name=document.getElementById('manual-food-name').value.trim();
+  const cal=parseInt(document.getElementById('manual-food-cal').value,10);
+  if(!name||isNaN(cal)||cal<0){ alert('Enter a name and calories.'); return; }
+  const meal={
+    id:Date.now().toString(), timestamp:Date.now(),
+    description:name, calories:cal,
+    protein:parseFloat(document.getElementById('manual-food-protein').value)||0,
+    carbs:parseFloat(document.getElementById('manual-food-carbs').value)||0,
+    fat:0,
+  };
+  meals.push(meal);
+  closeFoodSearch();
+  const ok=await saveToGH();
+  if(!ok) meals.pop();
+  renderCalories();
+}
+
+// ── Barcode scanner ──
+function openBarcodeScanner(){
+  document.getElementById('barcode-status').textContent='';
+  document.getElementById('barcode-overlay').classList.remove('hidden');
+}
+function closeBarcodeScanner(){ document.getElementById('barcode-overlay').classList.add('hidden'); }
+
+async function handleBarcodePhoto(input){
+  const file=input.files[0];
+  input.value='';
+  if(!file)return;
+  const status=document.getElementById('barcode-status');
+  status.textContent='Reading barcode…';
+  try{
+    const bitmap=await createImageBitmap(file);
+    if(!('BarcodeDetector' in window)){ status.textContent='Barcode detection not supported in this browser. Try searching by name instead.'; return; }
+    const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39']});
+    const barcodes=await detector.detect(bitmap);
+    if(!barcodes.length){ status.textContent='No barcode found. Make sure the barcode is clear and well-lit.'; return; }
+    const code=barcodes[0].rawValue;
+    status.textContent=`Found barcode ${code} — looking up…`;
+    const res=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const data=await res.json();
+    if(data.status!==1){ status.textContent='Product not found in database. Try searching by name.'; return; }
+    const p=data.product;
+    const n=p.nutriments||{};
+    if(!n['energy-kcal_100g']){ status.textContent='Nutrition info not available for this product.'; return; }
+    closeBarcodeScanner();
+    window._offResults=[p];
+    openFoodDetail(0);
+  }catch(e){ status.textContent='Error: '+e.message; }
 }
 
 // ── Utils ──
